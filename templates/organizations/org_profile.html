@@ -1,0 +1,584 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load org_tags %}
+
+{% block title %}{{ org.name }} — UB-CSO{% endblock %}
+{% block breadcrumb %}{{ org.name }}{% endblock %}
+{% block mobile_title %}Org Profile{% endblock %}
+
+{% block content %}
+<!-- Blue glow -->
+<div class="fixed top-0 left-0 pointer-events-none" style="z-index:1;width:70%;height:60%;background:radial-gradient(ellipse at 0% 0%, rgba(34,119,224,0.69) 0%, rgba(93,173,226,0.18) 30%, transparent 70%);"></div>
+<div class="max-w-3xl mx-auto relative" style="z-index:2;">
+
+    <div class="flex items-center gap-3 mb-6">
+        <a href="{% url 'organizations:directory' %}" class="text-gray-400 hover:text-gray-600 transition-colors">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        </a>
+        <h1 class="text-xl font-semibold text-gray-900">Organization profile</h1>
+    </div>
+
+    <!-- Banner + logo -->
+    <div class="bg-white rounded-2xl border border-gray-200 mb-4">
+        <div class="bg-navy relative overflow-hidden rounded-t-2xl org-banner-spacer{% if org.banner %} cursor-zoom-in{% endif %}" style="padding-top: 33.33%;"
+             {% if org.banner %}onclick="openOrgLightbox('{{ org.banner.url }}')"{% endif %}>
+            <div class="absolute inset-0">
+            {% if org.banner %}
+                <img src="{{ org.banner.url }}" alt="Banner" class="w-full h-full object-cover">
+            {% else %}
+                <div class="absolute inset-0">
+                    <div class="absolute top-0 right-0 w-40 h-40 bg-light-blue opacity-10 rounded-full -mr-16 -mt-16"></div>
+                    <div class="absolute bottom-0 left-20 w-24 h-24 bg-orange opacity-10 rounded-full -mb-10"></div>
+                </div>
+            {% endif %}
+            </div>
+            {% if org.is_cso %}
+            <div class="absolute top-3 right-3 bg-orange text-white text-xs px-3 py-1 rounded-full font-medium">
+                Governing Body
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="px-4 sm:px-6 pb-6">
+            <!-- Logo row — sits over the banner edge -->
+            <div class="-mt-16 mb-3 relative z-10 org-logo-row">
+                {% if org.logo %}
+                    <img src="{{ org.logo.url }}" alt="Logo"
+                         onclick="openOrgLightbox('{{ org.logo.url }}')"
+                         class="w-28 h-28 sm:w-36 sm:h-36 rounded-full object-cover ring-4 ring-white flex-shrink-0 cursor-zoom-in">
+                {% else %}
+                    <div class="w-28 h-28 sm:w-36 sm:h-36 rounded-full bg-navy flex items-center justify-center ring-4 ring-white flex-shrink-0">
+                        <span class="text-white text-2xl sm:text-3xl font-bold">{{ org.name|slice:":2"|upper }}</span>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Name + action button row -->
+            <div class="flex items-start justify-between gap-3 mb-3">
+                <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight min-w-0 break-words">{{ org.name }}</h1>
+                <!-- Join / pending / member button -->
+                <div class="flex-shrink-0 mt-1">
+                {% if not user_membership and not pending_request %}
+                <a href="{% url 'memberships:membership_request' org.id %}"
+                   class="flex items-center gap-1.5 px-3 py-2 bg-navy text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-navy-light transition-colors whitespace-nowrap">
+                    <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    Join
+                </a>
+                {% elif pending_request %}
+                <span class="flex items-center gap-1.5 px-3 py-2 bg-gold bg-opacity-10 text-yellow-700 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap">
+                    <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Pending
+                </span>
+                {% else %}
+                <span class="flex items-center gap-1.5 px-3 py-2 bg-green-50 text-green-700 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap">
+                    <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    {% if user_membership.custom_role %}
+                        {{ user_membership.custom_role.name }}
+                    {% elif org.is_cso and user_membership.role == 'chairman' %}
+                        President
+                    {% else %}
+                        {{ user_membership.get_role_display }}
+                    {% endif %}
+                </span>
+                {% endif %}
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-2 mt-1">
+                {% for category in org.categories.all %}
+                <span class="text-xs bg-navy bg-opacity-10 text-navy px-2.5 py-0.5 rounded-full">{{ category.name }}</span>
+                {% endfor %}
+                
+                <!-- Organization Type Badge -->
+                <span class="text-xs font-medium px-2.5 py-0.5 rounded-full
+                    {% if org.category == 'student' %}bg-blue-100 text-blue-800
+                    {% elif org.category == 'ub_chapter' %}bg-purple-100 text-purple-800
+                    {% elif org.category == 'institutional' %}bg-green-100 text-green-800
+                    {% endif %}">
+                    {{ org.get_category_display }}
+                </span>
+            </div>
+
+            {% if org.description %}
+            <p class="text-gray-600 text-sm mt-4 leading-relaxed">{{ org.description }}</p>
+            {% endif %}
+
+            {% if org.goals %}
+            <div class="mt-4 p-3 bg-gray-50 rounded-xl">
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Goals</p>
+                <p class="text-gray-600 text-sm leading-relaxed">{{ org.goals }}</p>
+            </div>
+            {% endif %}
+
+            <!-- Stats -->
+            <div class="flex gap-6 mt-4 pt-4 border-t border-gray-100">
+                <div>
+                    <p class="text-xl font-semibold text-gray-900">{{ total_members }}</p>
+                    <p class="text-xs text-gray-400">Members</p>
+                </div>
+                {% if not org.is_cso %}
+                <div>
+                    <p class="text-xl font-semibold text-gray-900">{{ approved_reports_count }}</p>
+                    <p class="text-xs text-gray-400">Reports</p>
+                </div>
+                {% endif %}
+                {% if org.founded_year or org.date_created %}
+                <div>
+                    <p class="text-xl font-semibold text-gray-900">
+                        {% if org.founded_year %}
+                            {{ org.founded_year }}
+                        {% else %}
+                            {{ org.date_created|date:"Y" }}
+                        {% endif %}
+                    </p>
+                    <p class="text-xs text-gray-400">Founded</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── Leadership ──────────────────────────────────────────────────────── -->
+    <div class="mb-4">
+        <!-- Header row -->
+        <div class="flex items-center justify-between mb-3 px-1">
+            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Leadership</h2>
+            <div class="hidden sm:flex gap-1">
+                <button id="lead-scroll-left"
+                    class="w-7 h-7 rounded-full border border-gray-200 bg-white flex items-center justify-center text-gray-400 hover:text-navy hover:border-navy transition-all">
+                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+                </button>
+                <button id="lead-scroll-right"
+                    class="w-7 h-7 rounded-full border border-gray-200 bg-white flex items-center justify-center text-gray-400 hover:text-navy hover:border-navy transition-all">
+                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                </button>
+            </div>
+        </div>
+
+        {% if chairman or co_chairmen or officers %}
+        <!-- Bubble row wrapper with fade edges -->
+        <div class="relative overflow-hidden">
+            <!-- Left fade -->
+            <div id="fade-left" class="absolute left-0 top-0 bottom-3 w-10 pointer-events-none z-10 opacity-0 transition-opacity duration-300"
+                 style="background:linear-gradient(to right, white, transparent);"></div>
+            <!-- Right fade -->
+            <div id="fade-right" class="absolute right-0 top-0 bottom-3 w-10 pointer-events-none z-10 transition-opacity duration-300"
+                 style="background:linear-gradient(to left, white, transparent);"></div>
+            
+            <!-- Bubble row -->
+            <div id="leadership-row"
+                 class="flex gap-4 overflow-x-auto pb-3"
+                 style="scroll-snap-type:x mandatory;scrollbar-width:none;-ms-overflow-style:none;padding-top:10px;padding-bottom:10px;padding-left:4px;padding-right:4px;">
+
+            <!-- Chairman -->
+            {% if chairman %}
+            <a href="{% url 'accounts:student_profile' chairman.user.id %}"
+               class="flex-shrink-0 flex flex-col items-center gap-1.5 chairman-bubble"
+               style="scroll-snap-align:start;width:88px;text-decoration:none;">
+                <div class="relative w-20 h-20 flex-shrink-0">
+                    {% if chairman.user.profile_picture %}
+                        <img src="{{ chairman.user.profile_picture.url }}" alt="Profile"
+                             class="w-20 h-20 rounded-full object-cover lead-bubble-img"
+                             style="box-shadow:0 0 0 2px #60a5fa,0 1px 4px rgba(0,0,0,.12);">
+                    {% else %}
+                        <div class="w-20 h-20 rounded-full bg-navy flex items-center justify-center lead-bubble-img"
+                             style="box-shadow:0 0 0 2px #60a5fa,0 1px 4px rgba(0,0,0,.12);">
+                            <span class="text-white text-base font-bold select-none">{{ chairman.user.first_name|first }}{{ chairman.user.last_name|first }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+                <p class="text-xs font-medium text-gray-800 text-center leading-tight line-clamp-2 w-full break-words">{{ chairman.user.get_full_name }}</p>
+                <p class="text-xs text-gray-400 text-center leading-tight truncate w-full">
+                    {% if chairman.custom_role %}{{ chairman.custom_role.name }}{% elif org.is_cso %}President{% else %}Chairman{% endif %}
+                </p>
+            </a>
+            {% endif %}
+
+            <!-- Divider between chairman and vice chairmen -->
+            {% if chairman and co_chairmen %}
+            <div class="flex-shrink-0 w-px bg-gray-200 self-stretch my-2"></div>
+            {% endif %}
+
+            <!-- Vice Chairmen -->
+            {% for membership in co_chairmen %}
+            <a href="{% url 'accounts:student_profile' membership.user.id %}"
+               class="flex-shrink-0 flex flex-col items-center gap-1.5 lead-bubble"
+               style="scroll-snap-align:start;width:88px;text-decoration:none;">
+                <div class="relative w-20 h-20 flex-shrink-0">
+                {% if membership.user.profile_picture %}
+                    <img src="{{ membership.user.profile_picture.url }}" alt="Profile"
+                         class="w-20 h-20 rounded-full object-cover lead-bubble-img"
+                         style="box-shadow:0 0 0 2px #fff,0 1px 4px rgba(0,0,0,.12);">
+                {% else %}
+                    <div class="w-20 h-20 rounded-full bg-light-blue flex items-center justify-center lead-bubble-img"
+                         style="box-shadow:0 0 0 2px #fff,0 1px 4px rgba(0,0,0,.12);">
+                        <span class="text-white text-base font-bold select-none">{{ membership.user.first_name|first }}{{ membership.user.last_name|first }}</span>
+                    </div>
+                {% endif %}
+                </div>
+                <p class="text-xs font-medium text-gray-800 text-center leading-tight line-clamp-2 w-full break-words">{{ membership.user.get_full_name }}</p>
+                <p class="text-xs text-gray-400 text-center leading-tight truncate w-full">
+                    {% if membership.custom_role %}{{ membership.custom_role.name }}{% else %}Vice Chairman{% endif %}
+                </p>
+            </a>
+            {% endfor %}
+
+            <!-- Divider between vice chairmen and officers -->
+            {% if officers and co_chairmen %}
+            <div class="flex-shrink-0 w-px bg-gray-200 self-stretch my-2"></div>
+            {% elif officers and chairman and not co_chairmen %}
+            <div class="flex-shrink-0 w-px bg-gray-200 self-stretch my-2"></div>
+            {% endif %}
+
+            <!-- Officers -->
+            {% for membership in officers %}
+            <a href="{% url 'accounts:student_profile' membership.user.id %}"
+               class="flex-shrink-0 flex flex-col items-center gap-1.5 lead-bubble"
+               style="scroll-snap-align:start;width:88px;text-decoration:none;">
+                <div class="relative w-20 h-20 flex-shrink-0">
+                {% if membership.user.profile_picture %}
+                    <img src="{{ membership.user.profile_picture.url }}" alt="Profile"
+                         class="w-20 h-20 rounded-full object-cover lead-bubble-img"
+                         style="box-shadow:0 0 0 2px #fff,0 1px 4px rgba(0,0,0,.12);">
+                {% else %}
+                    <div class="w-20 h-20 rounded-full bg-gray-300 flex items-center justify-center lead-bubble-img"
+                         style="box-shadow:0 0 0 2px #fff,0 1px 4px rgba(0,0,0,.12);">
+                        <span class="text-white text-base font-bold select-none">{{ membership.user.first_name|first }}{{ membership.user.last_name|first }}</span>
+                    </div>
+                {% endif %}
+                </div>
+                <p class="text-xs font-medium text-gray-800 text-center leading-tight line-clamp-2 w-full break-words">{{ membership.user.get_full_name }}</p>
+                <p class="text-xs text-gray-400 text-center leading-tight truncate w-full">
+                    {% if membership.custom_role %}{{ membership.custom_role.name }}{% else %}Officer{% endif %}
+                </p>
+            </a>
+            {% endfor %}
+
+        </div>
+        </div>
+        {% else %}
+        <p class="text-gray-300 text-sm text-center py-6">No officers assigned yet.</p>
+        {% endif %}
+    </div>
+
+    {% if advisers %}
+    <!-- ─── Advisers ──────────────────────────────────────────────────────────── -->
+    <div class="mb-4">
+        <div class="flex items-center justify-between mb-3 px-1">
+            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Advisers</h2>
+        </div>
+        <div class="relative overflow-hidden">
+            <!-- Left fade -->
+            <div class="absolute left-0 top-0 bottom-3 w-10 pointer-events-none z-10 opacity-0"
+                 style="background:linear-gradient(to right, white, transparent);"></div>
+            <!-- Right fade -->
+            <div class="absolute right-0 top-0 bottom-3 w-10 pointer-events-none z-10"
+                 style="background:linear-gradient(to left, white, transparent);"></div>
+            <div class="flex gap-4 overflow-x-auto pb-3"
+                 style="scroll-snap-type:x mandatory;scrollbar-width:none;-ms-overflow-style:none;padding-top:10px;padding-bottom:10px;padding-left:4px;padding-right:4px;">
+                {% for membership in advisers %}
+                <a href="{% url 'accounts:student_profile' membership.user.id %}"
+                   class="flex-shrink-0 flex flex-col items-center gap-1.5 lead-bubble"
+                   style="scroll-snap-align:start;width:88px;text-decoration:none;">
+                    <div class="relative w-20 h-20 flex-shrink-0">
+                    {% if membership.user.profile_picture %}
+                        <img src="{{ membership.user.profile_picture.url }}" alt="Profile"
+                             class="w-20 h-20 rounded-full object-cover lead-bubble-img"
+                             style="box-shadow:0 0 0 2px #fff,0 1px 4px rgba(0,0,0,.12);">
+                    {% else %}
+                        <div class="w-20 h-20 rounded-full bg-gray-400 flex items-center justify-center lead-bubble-img"
+                             style="box-shadow:0 0 0 2px #fff,0 1px 4px rgba(0,0,0,.12);">
+                            <span class="text-white text-base font-bold select-none">{{ membership.user.first_name|first }}{{ membership.user.last_name|first }}</span>
+                        </div>
+                    {% endif %}
+                    </div>
+                    <p class="text-xs font-medium text-gray-800 text-center leading-tight line-clamp-2 w-full break-words">{{ membership.user.get_full_name }}</p>
+                    <p class="text-xs text-gray-400 text-center leading-tight truncate w-full">
+                        {% if membership.custom_role %}{{ membership.custom_role.name }}{% else %}Adviser{% endif %}
+                    </p>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ─── Members ───────────────────────────────────────────────────────────── -->
+    {% if not org.is_cso and all_members %}
+    <div class="bg-white rounded-2xl border border-gray-200 p-5 mb-4">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">
+                Members <span class="text-gray-300 font-normal">({{ all_members.count }})</span>
+            </h2>
+        </div>
+        <div class="space-y-1" id="members-list">
+            {% for membership in all_members %}
+            <a href="{% url 'accounts:student_profile' membership.user.id %}"
+               class="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-gray-50 transition-colors group{% if forloop.counter > 6 %} member-extra hidden{% endif %}">
+                {% if membership.user.profile_picture %}
+                    <img src="{{ membership.user.profile_picture.url }}" alt="Profile"
+                         class="w-9 h-9 rounded-full object-cover flex-shrink-0">
+                {% else %}
+                    <div class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                        <span class="text-gray-500 text-xs font-semibold">{{ membership.user.first_name|first }}{{ membership.user.last_name|first }}</span>
+                    </div>
+                {% endif %}
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-800 truncate group-hover:text-navy transition-colors">
+                        {{ membership.user.get_full_name }}
+                    </p>
+                    <p class="text-xs text-gray-400 truncate">
+                        {% if membership.custom_role %}{{ membership.custom_role.name }}
+                        {% elif membership.role == 'chairman' %}Chairman
+                        {% elif membership.role == 'co_chairman' %}Vice Chairman
+                        {% elif membership.role == 'officer' %}Officer
+                        {% else %}Member{% endif %}
+                    </p>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% if all_members.count > 6 %}
+        <button id="members-toggle"
+                onclick="toggleMembers()"
+                class="mt-3 w-full text-xs text-navy font-medium py-2 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors">
+            View all {{ all_members.count }} members
+        </button>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- ─── Media Section ──────────────────────────────────────────────────── -->
+
+    <!-- Showcase — blends as a banner, no label, no controls -->
+    {% if showcase %}
+    <div class="mt-4 rounded-2xl overflow-hidden relative inline-block w-full {% if showcase.description %}group cursor-pointer{% endif %}">
+
+      {% if showcase.is_image %}
+        <img src="{{ showcase.image.url }}" alt=""
+             class="w-full object-cover block" style="max-height: 420px;">
+      {% elif showcase.is_video %}
+        <video autoplay loop muted playsinline
+               class="w-full object-cover block" style="max-height: 420px;">
+          <source src="{{ showcase.video_post.video.url }}">
+        </video>
+      {% endif %}
+
+      {% if showcase.accent_color %}
+        <!-- Bottom-quarter accent overlay with top fade only -->
+        <div class="absolute inset-x-0 bottom-0 pointer-events-none" style="height: 25%;">
+          <div style="
+            position: absolute; inset: 0;
+            background: linear-gradient(to bottom, transparent 0%, {{ showcase.accent_color }} 60%);
+            opacity: 0.35;
+          "></div>
+        </div>
+      {% endif %}
+
+      <!-- Hover overlay with description (only if description exists) -->
+      {% if showcase.description %}
+      <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center p-6"
+           style="background:rgba(0,0,0,0.72);">
+        <p class="text-white text-center font-semibold leading-snug" style="font-size:1.25rem;text-shadow:0 2px 8px rgba(0,0,0,.6);">{{ showcase.description|truncatechars:50 }}</p>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Management controls (privileged users only) -->
+    {% if is_privileged %}
+    <div class="bg-white rounded-2xl border border-gray-200 p-5 mt-4">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">Media</h2>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        {% if not album %}
+        <a href="{% url 'organizations:album_create' org_id=org.id %}"
+           class="inline-flex items-center gap-1.5 px-3 py-2 bg-navy text-white text-xs font-medium rounded-lg hover:bg-opacity-90 transition-colors">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          Create Org Album
+        </a>
+        {% else %}
+        <a href="{% url 'organizations:album_edit' org_id=org.id album_id=album.id %}"
+           class="inline-flex items-center gap-1.5 px-3 py-2 border border-gray-200 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50 transition-colors">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          Edit Org Album
+        </a>
+        {% endif %}
+        <a href="{% url 'organizations:showcase_form' org_id=org.id %}"
+           class="inline-flex items-center gap-1.5 px-3 py-2 border border-gray-200 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50 transition-colors">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3l14 9-14 9V3z"/></svg>
+          {% if showcase %}Update Showcase{% else %}Set Showcase{% endif %}
+        </a>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Org Album -->
+    {% if album %}
+    <div class="mt-4" id="albums-section">
+      <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-3">Org Album</h2>
+      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <!-- Cover photo -->
+        {% if album.cover_photo %}
+          <div class="relative overflow-hidden" style="max-height: 280px;">
+            <img src="{{ album.cover_photo.image.url }}" alt="{{ album.title }}"
+                 class="w-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+            <span class="absolute bottom-3 left-4 text-white text-xs font-medium">{{ album.photo_count }} photo{{ album.photo_count|pluralize }}</span>
+          </div>
+        {% else %}
+          <div class="h-36 bg-gray-100 flex items-center justify-center">
+            <svg class="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          </div>
+        {% endif %}
+
+        <div class="p-4">
+          <div class="flex items-center justify-between mb-3">
+            <p class="text-sm font-semibold text-gray-900">{{ album.title }}</p>
+            <button class="open-album-btn text-xs text-navy font-medium hover:underline"
+                    data-album-id="{{ album.id }}">View Photos</button>
+          </div>
+
+          <!-- Inline gallery (hidden by default) -->
+          <div id="album-gallery-{{ album.id }}" class="hidden">
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5 mb-3">
+              {% for photo in album.photos.all %}
+                <img src="{{ photo.image.url }}" alt="Photo"
+                     class="gallery-thumb w-full h-24 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                     data-album="{{ album.id }}" data-index="{{ forloop.counter0 }}" data-src="{{ photo.image.url }}">
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% elif not is_privileged %}
+    <div class="mt-4 bg-white rounded-2xl border border-gray-200 p-8 text-center">
+      <svg class="w-10 h-10 text-gray-200 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      <p class="text-sm text-gray-400">No media posted yet.</p>
+    </div>
+    {% endif %}
+
+
+</div>
+
+<!-- Org logo/banner lightbox -->
+<div id="org-lightbox" onclick="closeOrgLightbox()"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:10000;align-items:center;justify-content:center;cursor:zoom-out;">
+    <img id="org-lightbox-img" src="" alt=""
+         style="max-width:90vw;max-height:90vh;border-radius:1rem;box-shadow:0 8px 40px rgba(0,0,0,0.6);object-fit:contain;">
+    <button onclick="closeOrgLightbox()" 
+            style="position:absolute;top:1rem;right:1rem;color:rgba(255,255,255,0.7);font-size:2rem;line-height:1;background:none;border:none;cursor:pointer;"
+            aria-label="Close">&times;</button>
+</div>
+
+<!-- Lightbox — outside stacking context so it renders above all navbars -->
+<div id="lightbox" class="fixed inset-0 hidden bg-black/90 flex items-center justify-center" style="z-index: 9999;">
+  <button id="lb-prev" class="absolute left-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white text-4xl leading-none select-none">&#8249;</button>
+  <img id="lb-img" src="" alt="Photo" class="max-h-screen max-w-full object-contain px-16">
+  <button id="lb-next" class="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white text-4xl leading-none select-none">&#8250;</button>
+  <button id="lb-close" class="absolute top-4 right-4 text-white/70 hover:text-white text-3xl leading-none">&times;</button>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<style>
+/* ── Leadership bubbles ─────────────────────────────────────────── */
+.lead-bubble,
+.chairman-bubble { cursor: pointer; text-decoration: none; }
+.lead-bubble .lead-bubble-img,
+.chairman-bubble .lead-bubble-img {
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+    display: block;
+}
+.lead-bubble:hover .lead-bubble-img {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 2px #93c5fd, 0 4px 12px rgba(0,0,0,.18) !important;
+}
+.chairman-bubble:hover .lead-bubble-img {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 3px #3b82f6, 0 4px 12px rgba(59,130,246,.35) !important;
+}
+/* Hide scrollbar on the bubble rows */
+#leadership-row::-webkit-scrollbar { display: none; }
+/* Fixed width for all bubble items — no overflow-hidden so hover scale isn't clipped */
+.lead-bubble,
+.chairman-bubble {
+    max-width: 88px;
+    min-width: 88px;
+}
+</style>
+<script src="{% static 'js/org_media.js' %}"></script>
+<script>
+// ── Org logo / banner lightbox ────────────────────────────────────────────
+function openOrgLightbox(src) {
+    var lb = document.getElementById('org-lightbox');
+    var img = document.getElementById('org-lightbox-img');
+    img.src = src;
+    lb.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+function closeOrgLightbox() {
+    document.getElementById('org-lightbox').style.display = 'none';
+    document.body.style.overflow = '';
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeOrgLightbox();
+});
+
+// ── Leadership row scroll arrows ──────────────────────────────────────────
+(function () {
+    var row = document.getElementById('leadership-row');
+    if (!row) return;
+    var btnL = document.getElementById('lead-scroll-left');
+    var btnR = document.getElementById('lead-scroll-right');
+    var fadeLeft = document.getElementById('fade-left');
+    var fadeRight = document.getElementById('fade-right');
+    var STEP = 200;
+    
+    // Update fade visibility based on scroll position
+    function updateFades() {
+        if (!row) return;
+        var scrollLeft = row.scrollLeft;
+        var maxScroll = row.scrollWidth - row.clientWidth;
+        
+        // Show left fade if scrolled right
+        if (fadeLeft) {
+            fadeLeft.style.opacity = scrollLeft > 10 ? '1' : '0';
+        }
+        
+        // Show right fade if not at end
+        if (fadeRight) {
+            fadeRight.style.opacity = scrollLeft < maxScroll - 10 ? '1' : '0';
+        }
+    }
+    
+    // Initial check
+    updateFades();
+    
+    // Update on scroll
+    row.addEventListener('scroll', updateFades);
+    
+    // Update on window resize
+    window.addEventListener('resize', updateFades);
+    
+    // Scroll buttons
+    if (btnL) btnL.addEventListener('click', function () { 
+        row.scrollBy({ left: -STEP, behavior: 'smooth' }); 
+    });
+    if (btnR) btnR.addEventListener('click', function () { 
+        row.scrollBy({ left: STEP, behavior: 'smooth' }); 
+    });
+})();
+
+// ── Members toggle ────────────────────────────────────────────────────────
+function toggleMembers() {
+    var extras = document.querySelectorAll('.member-extra');
+    var btn = document.getElementById('members-toggle');
+    var hidden = extras.length > 0 && extras[0].classList.contains('hidden');
+    extras.forEach(function (el) { el.classList.toggle('hidden', !hidden); });
+    if (btn) btn.textContent = hidden ? 'Show less' : 'View all {{ regular_members.count }} members';
+}
+</script>
+{% endblock %}

@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{% if mode == 'edit' %}Edit Org Album{% else %}Create Org Album{% endif %} — {{ org.name }}{% endblock %}
+{% block breadcrumb %}{{ org.name }} / {% if mode == 'edit' %}Edit Org Album{% else %}Create Org Album{% endif %}{% endblock %}
+{% block mobile_title %}{% if mode == 'edit' %}Edit Album{% else %}Create Album{% endif %}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+
+  <div class="flex items-center gap-3 mb-6">
+    <a href="{% url 'organizations:org_profile' org_id=org.id %}" class="text-gray-400 hover:text-gray-600 transition-colors">
+      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+    </a>
+    <div>
+      <h1 class="text-xl font-semibold text-gray-900">{% if mode == 'edit' %}Edit Org Album{% else %}Create Org Album{% endif %}</h1>
+      <p class="text-sm text-gray-400 mt-0.5">{{ org.name }}</p>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="mb-4 px-4 py-3 rounded-xl text-sm {% if message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-green-50 text-green-700 border border-green-200{% endif %}">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="bg-white rounded-2xl border border-gray-200 p-6 mb-4">
+    <form method="post" enctype="multipart/form-data" id="album-form">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="save">
+      <!-- Hidden field updated by JS with drag order -->
+      <input type="hidden" name="photo_order" id="photo-order-input">
+
+      <div class="mb-5">
+        <label class="block text-sm font-medium text-gray-700 mb-1.5">Album Title <span class="text-red-500">*</span></label>
+        <input type="text" name="title" maxlength="200" required
+               value="{% if album %}{{ album.title }}{% endif %}"
+               class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-navy focus:border-transparent"
+               placeholder="e.g. Foundation Day 2025">
+      </div>
+
+      {% if mode == 'edit' and album.photos.all %}
+        <div class="mb-5">
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            Photos
+            <span class="text-xs font-normal text-gray-400 ml-1">— drag to reorder · first photo is the cover</span>
+          </label>
+          <div id="sortable-photos" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {% for photo in album.photos.all %}
+              <div class="photo-card relative rounded-xl border border-gray-200 overflow-hidden cursor-grab active:cursor-grabbing bg-white"
+                   data-photo-id="{{ photo.id }}" id="photo-card-{{ photo.id }}">
+                <!-- Drag handle indicator -->
+                <div class="absolute top-1.5 left-1.5 z-10 bg-black/40 rounded-md px-1 py-0.5 text-white/80 text-xs select-none pointer-events-none">
+                  ⠿
+                </div>
+                <!-- Remove button -->
+                <button type="button" onclick="markRemove({{ photo.id }})"
+                        class="absolute top-1.5 right-1.5 z-10 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600"
+                        id="remove-btn-{{ photo.id }}" title="Remove">
+                  &times;
+                </button>
+                <input type="checkbox" name="remove_photo_ids" value="{{ photo.id }}" class="sr-only" id="remove-cb-{{ photo.id }}">
+                <img src="{{ photo.image.url }}" alt="Photo"
+                     class="w-full h-28 object-cover transition-opacity" id="existing-img-{{ photo.id }}">
+
+              </div>
+            {% endfor %}
+          </div>
+          <p class="text-xs text-gray-400 mt-2">Drag cards to reorder. The first card becomes the cover photo.</p>
+        </div>
+      {% endif %}
+
+      <!-- New photos with live preview raft -->
+      <div class="mb-5">
+        <label class="block text-sm font-medium text-gray-700 mb-1.5">
+          {% if mode == 'edit' %}Add More Photos{% else %}Photos <span class="text-red-500">*</span>{% endif %}
+        </label>
+        <label for="photo-input"
+               class="flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-400 cursor-pointer hover:border-navy hover:text-navy transition-colors">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          Choose photos
+        </label>
+        <input type="file" name="photos" id="photo-input" multiple accept=".jpg,.jpeg,.png,.webp" class="sr-only">
+        <p class="text-xs text-gray-400 mt-1.5">JPEG, PNG, or WebP · Max 10 MB each · Up to 50 total</p>
+        <p id="photo-count-warning" class="text-xs text-red-500 mt-1 hidden">Too many photos — maximum is 50.</p>
+        <div id="preview-raft" class="mt-3 flex flex-wrap gap-2 hidden"></div>
+      </div>
+
+      <div class="flex gap-3 pt-2">
+        <button type="submit"
+                class="px-5 py-2 bg-navy text-white text-sm font-medium rounded-lg hover:bg-opacity-90 transition-colors">
+          {% if mode == 'edit' %}Save Changes{% else %}Create Album{% endif %}
+        </button>
+        <a href="{% url 'organizations:org_profile' org_id=org.id %}"
+           class="px-5 py-2 border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors">
+          Cancel
+        </a>
+        {% if mode == 'edit' %}
+        <button type="button" id="delete-album-btn"
+                class="ml-auto px-5 py-2 border border-red-200 text-red-600 text-sm font-medium rounded-lg hover:bg-red-50 transition-colors">
+          Delete Album
+        </button>
+        <form id="delete-album-form" method="post" action="{% url 'organizations:album_delete' org_id=org.id album_id=album.id %}" class="hidden">
+          {% csrf_token %}
+        </form>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+</div>
+
+<script>
+  // ─── Drag-to-reorder (vanilla, no library) ───────────────────────────────
+  const sortable = document.getElementById('sortable-photos');
+  if (sortable) {
+    let dragging = null;
+
+    sortable.addEventListener('dragstart', e => {
+      dragging = e.target.closest('.photo-card');
+      if (!dragging) return;
+      dragging.classList.add('opacity-50');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+
+    sortable.addEventListener('dragend', () => {
+      if (dragging) dragging.classList.remove('opacity-50');
+      dragging = null;
+      updateOrderInput();
+    });
+
+    sortable.addEventListener('dragover', e => {
+      e.preventDefault();
+      const target = e.target.closest('.photo-card');
+      if (!target || target === dragging) return;
+      const rect = target.getBoundingClientRect();
+      const mid = rect.left + rect.width / 2;
+      if (e.clientX < mid) {
+        sortable.insertBefore(dragging, target);
+      } else {
+        sortable.insertBefore(dragging, target.nextSibling);
+      }
+    });
+
+    // Make cards draggable
+    sortable.querySelectorAll('.photo-card').forEach(card => {
+      card.setAttribute('draggable', 'true');
+    });
+
+    function updateOrderInput() {
+      const ids = [...sortable.querySelectorAll('.photo-card')].map(c => c.dataset.photoId);
+      document.getElementById('photo-order-input').value = ids.join(',');
+    }
+
+    // Init order on load
+    updateOrderInput();
+  }
+
+  // ─── Live preview raft ───────────────────────────────────────────────────
+  const photoInput = document.getElementById('photo-input');
+  const raft = document.getElementById('preview-raft');
+  const warning = document.getElementById('photo-count-warning');
+  const albumForm = document.getElementById('album-form');
+  let selectedFiles = [];
+
+  photoInput.addEventListener('change', function () {
+    Array.from(photoInput.files).forEach(f => selectedFiles.push(f));
+    photoInput.value = '';
+    renderRaft();
+  });
+
+  function renderRaft() {
+    raft.innerHTML = '';
+    warning.classList.toggle('hidden', selectedFiles.length <= 50);
+    raft.classList.toggle('hidden', selectedFiles.length === 0);
+    selectedFiles.forEach(function (file, idx) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const wrap = document.createElement('div');
+        wrap.className = 'relative flex-shrink-0';
+        wrap.id = 'preview-wrap-' + idx;
+        wrap.innerHTML =
+          '<img src="' + e.target.result + '" class="w-20 h-20 object-cover rounded-lg border border-gray-200">' +
+          '<button type="button" class="remove-preview-btn absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600 leading-none" data-idx="' + idx + '">&times;</button>';
+        raft.appendChild(wrap);
+        wrap.querySelector('.remove-preview-btn').addEventListener('click', function () {
+          removePreview(parseInt(this.dataset.idx));
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function removePreview(idx) {
+    selectedFiles.splice(idx, 1);
+    renderRaft();
+  }
+
+  albumForm.addEventListener('submit', function () {
+    if (selectedFiles.length === 0) return;
+    try {
+      const dt = new DataTransfer();
+      selectedFiles.forEach(f => dt.items.add(f));
+      photoInput.files = dt.files;
+    } catch (err) {
+      console.warn('DataTransfer not supported', err);
+    }
+  });
+
+  // ─── Existing photo remove toggle ───────────────────────────────────────
+  function markRemove(photoId) {
+    const cb = document.getElementById('remove-cb-' + photoId);
+    const img = document.getElementById('existing-img-' + photoId);
+    const btn = document.getElementById('remove-btn-' + photoId);
+    cb.checked = !cb.checked;
+    img.classList.toggle('opacity-30', cb.checked);
+    btn.classList.toggle('bg-red-500', !cb.checked);
+    btn.classList.toggle('bg-gray-400', cb.checked);
+    btn.title = cb.checked ? 'Undo' : 'Remove';
+  }
+
+  // ─── Delete album with custom confirm ───────────────────────────────────
+  {% if mode == 'edit' %}
+  document.getElementById('delete-album-btn').addEventListener('click', async function () {
+    try {
+      await window.showConfirm('This will permanently delete the album and all its photos.', 'Delete Org Album?');
+      document.getElementById('delete-album-form').submit();
+    } catch (_) {}
+  });
+  {% endif %}
+</script>
+{% endblock %}

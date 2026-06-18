@@ -1,0 +1,321 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard — UB-CSO{% endblock %}
+{% block breadcrumb %}Dashboard{% endblock %}
+{% block mobile_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Glow — fixed to viewport, originates from top-left corner. Sidebar/topbar sit above it via z-index. -->
+<div class="fixed top-0 left-0 pointer-events-none" style="
+    z-index: 1;
+    width: 70%;
+    height: 60%;
+    background: radial-gradient(ellipse at 0% 0%, rgba(34, 119, 224, 0.69) 0%, rgba(93,173,226,0.18) 30%, transparent 70%);
+"></div>
+
+<div class="relative" style="z-index: 2;">
+
+<style>
+/* Org card scroll row */
+#org-cards-row {
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+}
+#org-cards-row::-webkit-scrollbar { display: none; }
+
+/* Org card cinematic banner */
+.org-card-wrap {
+    scroll-snap-align: start;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.org-card-wrap:hover {
+    transform: scale(1.03);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+}
+.org-card-wrap:hover .org-card-hover-label {
+    opacity: 1;
+}
+.org-card-hover-label {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+/* Stat card hover */
+.stat-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.stat-card:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 12px 28px rgba(0,0,0,0.25);
+}
+
+/* Election row hover */
+.election-row {
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.election-row:hover {
+    border-color: #5DADE2;
+    box-shadow: 0 4px 14px rgba(93,173,226,0.1);
+}
+</style>
+
+<div class="lg:grid lg:grid-cols-3 lg:gap-6 lg:items-start">
+
+<!-- LEFT COLUMN -->
+<div class="lg:col-span-2">
+
+<div class="mb-6">
+    <h1 class="text-xl md:text-2xl font-semibold text-gray-900">Welcome back, {{ user.first_name }}!</h1>
+    <p class="text-gray-500 text-sm mt-1">
+        {% if user.is_faculty %}
+        {{ user.employee_id }}{% if user.department %} · {{ user.department }}{% endif %}
+        {% else %}
+        {{ user.student_id }} · Year {{ user.year_level }}
+        {% endif %}
+    </p>
+</div>
+
+<!-- Stats row -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
+    <!-- My Organizations -->
+    <div class="stat-card rounded-xl p-4 cursor-default shadow-lg hover:shadow-xl transition-all" style="background: linear-gradient(135deg, #1B2A7B 0%, #0f1d5e 100%);">
+        <div class="flex items-center justify-between mb-2">
+            <p class="text-xs text-white text-opacity-80 uppercase tracking-wider font-semibold">My Orgs</p>
+            <svg class="w-5 h-5 text-white text-opacity-90" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        </div>
+        <p class="text-3xl font-bold text-white">{{ orgs_count }}</p>
+        <p class="text-xs text-white text-opacity-70 mt-1">Organizations joined</p>
+    </div>
+
+    <!-- Unread Notifications -->
+    <div class="stat-card rounded-xl p-4 cursor-default shadow-lg hover:shadow-xl transition-all" style="background: linear-gradient(135deg, #53ACF5 0%, #2e8dd9 100%);">
+        <div class="flex items-center justify-between mb-2">
+            <p class="text-xs text-white text-opacity-80 uppercase tracking-wider font-semibold">Alerts</p>
+            <svg class="w-5 h-5 text-white text-opacity-90" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+        </div>
+        <p class="text-3xl font-bold text-white">{{ notifications_count }}</p>
+        <p class="text-xs text-white text-opacity-70 mt-1">Unread notifications</p>
+    </div>
+
+    <!-- Pending Requests -->
+    <div class="stat-card rounded-xl p-4 cursor-default shadow-lg hover:shadow-xl transition-all" style="background: linear-gradient(135deg, #FCD838 0%, #e6c420 100%);">
+        <div class="flex items-center justify-between mb-2">
+            <p class="text-xs uppercase tracking-wider font-semibold" style="color: #1B2A7B; opacity: 0.9;">Pending</p>
+            <svg class="w-5 h-5" style="color: #1B2A7B; opacity: 0.9;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <p class="text-3xl font-bold" style="color: #1B2A7B;">{{ pending_count }}</p>
+        <p class="text-xs" style="color: #1B2A7B; opacity: 0.7;">Membership requests</p>
+    </div>
+
+    <!-- My Board Posts -->
+    <div class="stat-card rounded-xl p-4 cursor-default shadow-lg hover:shadow-xl transition-all" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+        <div class="flex items-center justify-between mb-2">
+            <p class="text-xs text-white text-opacity-80 uppercase tracking-wider font-semibold">My Posts</p>
+            <svg class="w-5 h-5 text-white text-opacity-90" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        </div>
+        <p class="text-3xl font-bold text-white">{{ board_posts_count }}</p>
+        <p class="text-xs text-white text-opacity-70 mt-1">Notes on boards</p>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="mb-6">
+    <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Quick Actions</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <a href="{% url 'organizations:accreditation_apply' %}"
+           class="flex items-center gap-3 bg-white border border-gray-200 rounded-xl p-4 hover:border-navy hover:shadow-md hover:-translate-y-0.5 transition-all group">
+            <div class="w-9 h-9 rounded-lg bg-navy bg-opacity-10 flex items-center justify-center flex-shrink-0 group-hover:bg-navy group-hover:bg-opacity-100 transition-colors">
+                <svg class="w-4 h-4 text-navy group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-gray-900">Apply for Accreditation</p>
+                <p class="text-xs text-gray-400">Register a new or chapter organization</p>
+            </div>
+        </a>
+        <a href="{% url 'memberships:my_requests' %}"
+           class="flex items-center gap-3 bg-white border border-gray-200 rounded-xl p-4 hover:border-light-blue hover:shadow-md hover:-translate-y-0.5 transition-all group">
+            <div class="w-9 h-9 rounded-lg bg-light-blue bg-opacity-10 flex items-center justify-center flex-shrink-0 group-hover:bg-light-blue group-hover:bg-opacity-100 transition-colors">
+                <svg class="w-4 h-4 text-light-blue group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                </svg>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-gray-900">My Requests</p>
+                <p class="text-xs text-gray-400">Track all your pending requests</p>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- Ongoing Elections -->
+{% if open_voter_elections %}
+<div class="mb-6">
+    <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Ongoing Elections</h2>
+        <a href="{% url 'elections:election_list' %}" class="text-xs text-light-blue hover:text-navy transition-colors">View all</a>
+    </div>
+    <div class="space-y-2">
+        {% for election in open_voter_elections %}
+        <div class="election-row bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between gap-3">
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 bg-green-500 rounded-full flex-shrink-0 animate-pulse"></span>
+                    <p class="text-sm font-semibold text-gray-900 truncate">{{ election.title }}</p>
+                </div>
+                <p class="text-xs text-gray-400 mt-0.5 ml-4">{{ election.organization.name }} · ends {{ election.end_datetime|date:"M d, g:i A" }}</p>
+            </div>
+            <a href="{% url 'elections:election_vote' election.id %}"
+               class="text-xs bg-orange text-white px-3 py-1.5 rounded-lg hover:bg-opacity-80 hover:shadow-sm transition-all flex-shrink-0 font-medium">
+                Vote Now
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- My Organizations — paginated 3-per-page -->
+{% if active_memberships %}
+<div class="mb-8">
+    <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">My Organizations</h2>
+    </div>
+
+    <!-- Card data for JS -->
+    <script>
+    window._orgCards = [
+        {% for membership in active_memberships %}
+        {
+            href: "{% if membership.role == 'chairman' or membership.role == 'co_chairman' %}{% url 'organizations:chairman_dashboard' membership.organization.id %}{% else %}{% url 'organizations:student_org_view' membership.organization.id %}{% endif %}",
+            banner: "{% if membership.organization.banner %}{{ membership.organization.banner.url }}{% endif %}",
+            logo: "{% if membership.organization.logo %}{{ membership.organization.logo.url }}{% endif %}",
+            name: "{{ membership.organization.name|escapejs }}",
+            initials: "{{ membership.organization.name|slice:':2'|upper }}"
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+    </script>
+
+    <div class="flex items-center gap-3">
+        <!-- Cards viewport -->
+        <div id="org-page-row" class="flex gap-3 flex-1 min-w-0"></div>
+
+        <!-- Next arrow — only shown when more than 3 orgs -->
+        {% if active_memberships|length > 3 %}
+        <button id="org-page-next"
+            class="flex-shrink-0 w-9 h-9 rounded-full border border-gray-200 bg-white flex items-center justify-center text-gray-400 hover:text-navy hover:border-navy hover:shadow-sm transition-all">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+            </svg>
+        </button>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+(function () {
+    var cards = window._orgCards || [];
+    var row = document.getElementById('org-page-row');
+    var btn = document.getElementById('org-page-next');
+    var page = 0;
+    var PER_PAGE = 3;
+
+    function cardHTML(c) {
+        var inner = '';
+        if (c.banner) {
+            inner += '<img src="' + c.banner + '" alt="" class="absolute inset-0 w-full h-full object-cover" style="filter:blur(14px);transform:scale(1.15);">';
+            inner += '<img src="' + c.banner + '" alt="' + c.name + '" class="absolute inset-0 w-full h-full object-contain">';
+        } else {
+            inner += '<div class="absolute inset-0" style="background:linear-gradient(135deg,#0a2463 0%,#1e3a8a 100%);"></div>';
+        }
+        inner += '<div class="org-card-hover-label absolute inset-0 bg-black/40 flex items-end p-3"><span class="text-white text-xs font-semibold drop-shadow truncate w-full">' + c.name + '</span></div>';
+        if (c.logo) {
+            inner += '<div class="absolute top-3 left-3 z-10"><img src="' + c.logo + '" alt="Logo" class="w-9 h-9 rounded-full object-cover border-2 border-white shadow-md"></div>';
+        } else {
+            inner += '<div class="absolute top-3 left-3 z-10"><div class="w-9 h-9 rounded-full bg-navy border-2 border-white shadow-md flex items-center justify-center"><span class="text-white text-xs font-bold">' + c.initials + '</span></div></div>';
+        }
+        return '<a href="' + c.href + '" class="org-card-wrap flex-1 min-w-0 rounded-2xl overflow-hidden relative shadow-sm border border-gray-200 cursor-pointer block" style="height:140px;" title="' + c.name + '">' + inner + '</a>';
+    }
+
+    function render() {
+        var start = page * PER_PAGE;
+        var slice = cards.slice(start, start + PER_PAGE);
+        row.innerHTML = slice.map(cardHTML).join('');
+        // Fade in
+        row.style.opacity = '0';
+        row.style.transition = 'opacity 0.2s ease';
+        requestAnimationFrame(function () { row.style.opacity = '1'; });
+    }
+
+    if (btn) {
+        btn.addEventListener('click', function () {
+            var totalPages = Math.ceil(cards.length / PER_PAGE);
+            page = (page + 1) % totalPages;
+            render();
+        });
+    }
+
+    render();
+})();
+</script>
+{% endif %}
+
+<!-- Welcome banner -->
+<div class="bg-navy rounded-xl p-5 md:p-6 text-white relative overflow-hidden hover:shadow-lg transition-shadow">
+    <div class="absolute top-0 right-0 w-32 h-32 bg-light-blue opacity-10 rounded-full -mr-10 -mt-10"></div>
+    <div class="absolute bottom-0 right-16 w-20 h-20 bg-orange opacity-10 rounded-full -mb-8"></div>
+    <div class="relative">
+        <h2 class="text-base md:text-lg font-semibold">UB-CSO Portal</h2>
+        <p class="text-white text-opacity-60 text-sm mt-1">University of Bohol</p>
+        <div class="flex flex-wrap gap-2 mt-4">
+            <span class="text-xs bg-white bg-opacity-10 px-3 py-1 rounded-full text-white text-opacity-70">Scholarship</span>
+            <span class="text-xs bg-white bg-opacity-10 px-3 py-1 rounded-full text-white text-opacity-70">Character</span>
+            <span class="text-xs bg-white bg-opacity-10 px-3 py-1 rounded-full text-white text-opacity-70">Service</span>
+        </div>
+    </div>
+</div>
+
+<!-- Discovery widget — mobile only -->
+<div class="lg:hidden mt-6">
+    <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Discover</h2>
+    </div>
+    <div id="discovery-widget-container-mobile"
+         hx-get="{% url 'core:discovery_widget' %}?tab=padlet"
+         hx-trigger="load"
+         hx-swap="innerHTML">
+        <div class="bg-white rounded-2xl border border-gray-200 p-6 text-center">
+            <div class="w-6 h-6 border-2 border-navy border-t-transparent rounded-full animate-spin mx-auto"></div>
+        </div>
+    </div>
+</div>
+
+</div><!-- end lg:col-span-2 -->
+
+<!-- RIGHT COLUMN — Discovery widget sticky -->
+<div class="hidden lg:block lg:col-span-1">
+    <div class="sticky top-4">
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Discover</h2>
+        </div>
+        <div id="discovery-widget-container"
+             hx-get="{% url 'core:discovery_widget' %}?tab=padlet"
+             hx-trigger="load"
+             hx-swap="innerHTML">
+            <div class="bg-white rounded-2xl border border-gray-200 p-6 text-center">
+                <div class="w-6 h-6 border-2 border-navy border-t-transparent rounded-full animate-spin mx-auto"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div><!-- end lg:grid -->
+</div><!-- end relative z-2 -->
+
+<script>
+// org scroll removed — pagination handled inline above
+</script>
+
+{% endblock %}

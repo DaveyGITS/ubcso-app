@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% block title %}Transfer Presidency — UB-CSO{% endblock %}
+{% block breadcrumb %}Admin Panel / Transfer Presidency{% endblock %}
+{% block mobile_title %}Transfer Presidency{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto">
+
+  <div class="mb-6">
+    <a href="{% url 'core:admin_panel' %}" class="text-sm text-gray-500 hover:text-navy transition-colors">← Admin Panel</a>
+    <h1 class="text-xl font-bold text-navy mt-1">Transfer Presidency</h1>
+    <p class="text-sm text-gray-500 mt-0.5">This action is irreversible. Choose your successor carefully.</p>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="mb-4 px-4 py-3 rounded-lg text-sm
+        {% if message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200
+        {% else %}bg-green-50 text-green-700 border border-green-200{% endif %}">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="bg-white rounded-xl border border-gray-200 p-6 mb-4">
+    <form method="POST">
+      {% csrf_token %}
+
+      <div class="mb-4">
+        <label class="block text-sm font-semibold text-gray-800 mb-1">Incoming President</label>
+        {% if eligible %}
+        <div class="relative">
+          <input type="text"
+                 id="successor-search-input"
+                 placeholder="Search by name or student ID…"
+                 autocomplete="off"
+                 class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-light-blue transition-colors"
+                 oninput="searchSuccessor()"
+                 onkeydown="if(event.key==='Escape') clearSuccessorSearch()">
+          <input type="hidden" name="successor_id" id="successor-id" required>
+          <ul id="successor-results"
+              class="absolute z-20 left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg hidden text-sm overflow-y-auto"
+              style="max-height: 220px;"></ul>
+        </div>
+        <p id="successor-confirmed" class="hidden text-xs text-green-600 mt-1.5 font-medium"></p>
+        {% else %}
+        <p class="text-sm text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+          No eligible CSO org members found. The successor must be a member of the CSO org first.
+        </p>
+        {% endif %}
+      </div>
+
+      <div class="mb-6">
+        <label class="block text-sm font-semibold text-gray-800 mb-1">Handover Note <span class="text-gray-400 font-normal">(optional)</span></label>
+        <p class="text-xs text-gray-400 mb-2">Delivered as a priority notification to the incoming president.</p>
+        <textarea name="note" rows="4"
+                  placeholder="Ongoing matters, important contacts, pending decisions..."
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-light-blue transition-colors resize-none"></textarea>
+      </div>
+
+      <button type="submit"
+              {% if not eligible %}disabled{% endif %}
+              class="w-full bg-navy text-white py-2.5 rounded-lg text-sm font-medium hover:bg-navy-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              onclick="return confirm('Transfer the CSO Presidency? This cannot be undone.')">
+        Confirm Transfer
+      </button>
+    </form>
+  </div>
+
+  <div class="bg-orange bg-opacity-10 border border-orange border-opacity-20 rounded-xl p-4">
+    <p class="text-xs text-orange font-medium mb-1">What happens after transfer</p>
+    <ul class="text-xs text-gray-600 space-y-1">
+      <li>· The selected person becomes CSO President immediately</li>
+      <li>· You retain temporary CSO Admin access for 24 hours</li>
+      <li>· You can self-revoke your temporary access at any time</li>
+      <li>· After 24 hours, your admin access is automatically removed</li>
+    </ul>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  var _timer = null;
+  var SEARCH_URL = "{% url 'core:cso_successor_search' %}";
+
+  window.searchSuccessor = function () {
+    var input = document.getElementById('successor-search-input');
+    var hiddenId = document.getElementById('successor-id');
+    var results = document.getElementById('successor-results');
+    var q = input.value.trim();
+
+    hiddenId.value = '';
+    document.getElementById('successor-confirmed').classList.add('hidden');
+
+    if (q.length < 2) {
+      results.classList.add('hidden');
+      results.innerHTML = '';
+      return;
+    }
+
+    clearTimeout(_timer);
+    _timer = setTimeout(function () {
+      fetch(SEARCH_URL + '?q=' + encodeURIComponent(q), {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          results.innerHTML = '';
+          if (!data.results || data.results.length === 0) {
+            results.innerHTML = '<li class="px-3 py-2 text-gray-400">No eligible members found</li>';
+          } else {
+            data.results.forEach(function (item) {
+              var li = document.createElement('li');
+              li.className = 'px-3 py-2 hover:bg-gray-50 cursor-pointer';
+              li.innerHTML =
+                '<div class="flex justify-between items-center">' +
+                  '<span class="font-medium text-gray-800 truncate min-w-0 mr-2">' + item.name + '</span>' +
+                  '<span class="text-xs text-gray-400 flex-shrink-0">' + item.student_id + '</span>' +
+                '</div>' +
+                '<div class="text-xs text-gray-400 mt-0.5">' + item.role + '</div>';
+              li.addEventListener('mousedown', function (e) {
+                e.preventDefault();
+                input.value = item.name + ' (' + item.student_id + ')';
+                hiddenId.value = item.membership_id;
+                results.classList.add('hidden');
+                var confirmed = document.getElementById('successor-confirmed');
+                confirmed.textContent = '✓ ' + item.name + ' · ' + item.role;
+                confirmed.classList.remove('hidden');
+              });
+              results.appendChild(li);
+            });
+          }
+          results.classList.remove('hidden');
+        });
+    }, 250);
+  };
+
+  window.clearSuccessorSearch = function () {
+    var results = document.getElementById('successor-results');
+    if (results) { results.classList.add('hidden'); results.innerHTML = ''; }
+    document.getElementById('successor-search-input').value = '';
+    document.getElementById('successor-id').value = '';
+    document.getElementById('successor-confirmed').classList.add('hidden');
+  };
+
+  document.addEventListener('click', function (e) {
+    var results = document.getElementById('successor-results');
+    var input = document.getElementById('successor-search-input');
+    if (results && input && !results.contains(e.target) && e.target !== input) {
+      results.classList.add('hidden');
+    }
+  });
+})();
+</script>
+{% endblock %}

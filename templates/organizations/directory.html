@@ -1,0 +1,228 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Org Directory — UB-CSO{% endblock %}
+{% block breadcrumb %}Org Directory{% endblock %}
+{% block mobile_title %}Org Directory{% endblock %}
+
+{% block content %}
+<div class="fixed top-0 left-0 pointer-events-none" style="z-index:1;width:70%;height:60%;background:radial-gradient(ellipse at 0% 0%, rgba(34,119,224,0.69) 0%, rgba(93,173,226,0.18) 30%, transparent 70%);"></div>
+<div class="relative" style="z-index:2;">
+
+{# ── Header ──────────────────────────────────────────────────────────────── #}
+<div class="flex items-center justify-between mb-4">
+    <div>
+        <h1 class="text-xl font-semibold text-gray-900">Org Directory</h1>
+        <p class="text-sm text-gray-400 mt-0.5">{{ organizations|length }} organization{{ organizations|length|pluralize }}</p>
+    </div>
+    {% if user.is_authenticated %}
+    <div class="flex gap-2">
+        <a href="{% url 'organizations:accreditation_apply' %}"
+           class="flex items-center gap-2 bg-navy text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-navy-light transition-colors">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            New Org
+        </a>
+        <a href="{% url 'organizations:claim_existing_org' %}"
+           class="flex items-center gap-2 bg-green-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            Register Existing
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+{# ── Search & filters ─────────────────────────────────────────────────────── #}
+<div class="bg-white rounded-2xl border border-gray-200 p-4 mb-6">
+    <form method="GET" action="{% url 'organizations:directory' %}" id="filter-form">
+        <div class="relative mb-3">
+            <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <input type="text" name="q" id="search-input" value="{{ query }}"
+                   placeholder="Search organizations by name…"
+                   autocomplete="off"
+                   class="w-full border border-gray-200 rounded-lg pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:border-navy transition-colors">
+        </div>
+
+        <div class="flex flex-wrap gap-2 items-center">
+            <select name="category" id="category-select"
+                    class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy bg-white text-gray-600">
+                <option value="">All categories</option>
+                {% for category in categories %}
+                <option value="{{ category.id }}" {% if selected_category == category.id|stringformat:"s" %}selected{% endif %}>
+                    {{ category.name }}
+                </option>
+                {% endfor %}
+            </select>
+
+            <select name="org_category" id="org-category-select"
+                    class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy bg-white text-gray-600">
+                <option value="">All organization types</option>
+                {% for value, label in org_category_choices %}
+                <option value="{{ value }}" {% if selected_org_category == value %}selected{% endif %}>
+                    {{ label }}
+                </option>
+                {% endfor %}
+            </select>
+
+            <select name="sort" id="sort-select"
+                    class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy bg-white text-gray-600">
+                <option value="">A–Z</option>
+                <option value="largest" {% if selected_sort == 'largest' %}selected{% endif %}>Largest</option>
+                <option value="newest"  {% if selected_sort == 'newest'  %}selected{% endif %}>Newest</option>
+                <option value="oldest"  {% if selected_sort == 'oldest'  %}selected{% endif %}>Oldest</option>
+            </select>
+
+            <button type="submit"
+                    class="px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium hover:bg-navy-light transition-colors">
+                Search
+            </button>
+
+            {% if query or selected_category or selected_org_category or selected_sort %}
+            <a href="{% url 'organizations:directory' %}?_clear=1"
+               class="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-500 hover:bg-gray-50 transition-colors">
+                Clear
+            </a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+{# ── Org cards grid ───────────────────────────────────────────────────────── #}
+{% if organizations %}
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="org-grid">
+    {% for org in organizations %}
+    <a href="{% url 'organizations:org_profile' org.id %}"
+       class="block bg-white rounded-2xl border border-gray-200 hover:border-navy transition-colors group">
+
+        {# Banner #}
+        <div class="bg-navy relative overflow-hidden rounded-t-2xl org-banner-spacer" style="padding-top: 33.33%;">
+            <div class="absolute inset-0">
+            {% if org.banner %}
+                <img src="{{ org.banner.url }}" alt="Banner" class="w-full h-full object-cover">
+            {% else %}
+                <div class="absolute inset-0 bg-navy">
+                    <div class="absolute top-0 right-0 w-20 h-20 bg-light-blue opacity-20 rounded-full -mr-6 -mt-6"></div>
+                    <div class="absolute bottom-0 left-8 w-12 h-12 bg-orange opacity-20 rounded-full -mb-4"></div>
+                </div>
+            {% endif %}
+            </div>
+            {# Member badge #}
+            {% if org.id in user_org_ids %}
+            <span class="absolute top-2 right-2 bg-white bg-opacity-90 text-navy text-xs font-semibold px-2 py-0.5 rounded-full">
+                Member
+            </span>
+            {% endif %}
+        </div>
+
+        <div class="p-4">
+            {# Logo #}
+            <div class="-mt-10 mb-2 relative z-10 org-logo-row">
+                {% if org.logo %}
+                    <img src="{{ org.logo.url }}" alt="Logo"
+                         class="w-20 h-20 rounded-full object-cover ring-2 ring-white">
+                {% else %}
+                    <div class="w-20 h-20 rounded-full bg-navy flex items-center justify-center ring-2 ring-white">
+                        <span class="text-white text-lg font-bold">{{ org.name|slice:":2"|upper }}</span>
+                    </div>
+                {% endif %}
+            </div>
+
+            {# Name + categories #}
+            <div class="flex items-center gap-2 flex-wrap mb-1">
+                <h3 class="text-sm font-semibold text-gray-900 leading-snug break-words">{{ org.name }}</h3>
+                {% if org.status_badge %}
+                <span style="{% if org.status_badge == 'Probationary' %}background:#fefce8;color:#a16207;{% elif org.status_badge == 'Institutional' %}background:#eff6ff;color:#1d4ed8;{% endif %}"
+                      class="text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0">
+                    {{ org.status_badge }}
+                </span>
+                {% endif %}
+            </div>
+            <div class="flex flex-wrap gap-1 mb-3">
+                {% for category in org.categories.all %}
+                <span class="text-xs bg-navy bg-opacity-10 text-navy px-2 py-0.5 rounded-full">{{ category.name }}</span>
+                {% endfor %}
+                
+                <!-- Organization Type Badge -->
+                <span style="{% if org.category == 'student' %}background:#eff6ff;color:#1d4ed8;{% elif org.category == 'ub_chapter' %}background:#faf5ff;color:#7e22ce;{% elif org.category == 'institutional' %}background:#f0fdf4;color:#15803d;{% endif %}"
+                      class="text-xs font-medium px-2 py-0.5 rounded-full">
+                    {{ org.get_category_display }}
+                </span>
+            </div>
+
+            {# Description #}
+            {% if org.description %}
+            <p class="text-xs text-gray-500 leading-relaxed mb-3 line-clamp-2">{{ org.description }}</p>
+            {% endif %}
+
+            {# Footer #}
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-1 text-xs text-gray-400">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    {{ org.active_member_count }} member{{ org.active_member_count|pluralize }}
+                </div>
+                <span class="text-xs text-navy font-medium group-hover:underline">View →</span>
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+
+{% else %}
+<div class="text-center py-20">
+    <svg class="w-16 h-16 text-gray-200 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <h2 class="text-gray-400 font-medium mb-1">No organizations found</h2>
+    <p class="text-gray-300 text-sm">Try a different search term or filter</p>
+</div>
+{% endif %}
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Persist filter state so back-navigation restores the filtered view ────────
+const STORAGE_KEY = 'dir_filter_state';
+
+// On load: if we arrived via back-navigation and have no query params, restore saved state
+(function restoreFilters() {
+    const params = new URLSearchParams(window.location.search);
+    const hasParams = params.has('q') || params.has('category') || params.has('org_category') || params.has('sort');
+
+    // If the URL has a special clear flag, wipe storage and redirect clean
+    if (params.has('_clear')) {
+        sessionStorage.removeItem(STORAGE_KEY);
+        window.location.replace(window.location.pathname);
+        return;
+    }
+
+    if (hasParams) {
+        // Save current params so next back-nav restores them
+        sessionStorage.setItem(STORAGE_KEY, window.location.search);
+        return;
+    }
+    // No params — check if we have a saved state to restore
+    const saved = sessionStorage.getItem(STORAGE_KEY);
+    if (saved && saved !== '?') {
+        window.location.replace(window.location.pathname + saved);
+    }
+})();
+
+// Auto-submit on dropdown change
+document.getElementById('category-select')?.addEventListener('change', () =>
+    document.getElementById('filter-form').submit());
+document.getElementById('org-category-select')?.addEventListener('change', () =>
+    document.getElementById('filter-form').submit());
+document.getElementById('sort-select')?.addEventListener('change', () =>
+    document.getElementById('filter-form').submit());
+</script>
+{% endblock %}

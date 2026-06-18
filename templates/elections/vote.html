@@ -1,0 +1,536 @@
+{% extends 'base.html' %}
+{% block title %}Vote — {{ election.title }} — UB-CSO{% endblock %}
+{% block breadcrumb %}Elections / Vote{% endblock %}
+{% block mobile_title %}Cast Your Vote{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Sky Blue / Cloud White page background ── */
+#main-content {
+    background: linear-gradient(160deg, #e8f4fd 0%, #dbeafe 50%, #bfdbfe 100%) !important;
+    min-height: 100vh;
+    padding-bottom: 8rem !important;
+}
+
+/* ── Soft cloud orbs ── */
+.vote-glow-1 {
+    position: fixed;
+    top: -10%;
+    left: -5%;
+    width: 55vw;
+    height: 55vh;
+    background: radial-gradient(ellipse, rgba(147,197,253,0.55) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+}
+.vote-glow-2 {
+    position: fixed;
+    bottom: -10%;
+    right: -5%;
+    width: 45vw;
+    height: 45vh;
+    background: radial-gradient(ellipse, rgba(191,219,254,0.6) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ── View toggle ── */
+.view-toggle {
+    display: inline-flex;
+    background: rgba(255,255,255,0.6);
+    border: 1px solid rgba(27,42,123,0.15);
+    border-radius: 12px;
+    padding: 4px;
+    gap: 2px;
+    backdrop-filter: blur(8px);
+}
+.view-toggle button {
+    padding: 0.45rem 1.2rem;
+    border-radius: 9px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    color: rgba(27,42,123,0.5);
+    background: transparent;
+    letter-spacing: 0.02em;
+}
+.view-toggle button.active {
+    background: #1B2A7B;
+    color: white;
+    box-shadow: 0 2px 12px rgba(27,42,123,0.3);
+}
+
+/* ── Position card (light) ── */
+.position-card {
+    background: rgba(255,255,255,0.75);
+    border: 1px solid rgba(27,42,123,0.1);
+    border-radius: 20px;
+    padding: 1.75rem;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 4px 24px rgba(27,42,123,0.08);
+}
+
+/* ── Position title ── */
+.position-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: #2563eb !important;
+    margin-bottom: 0.25rem;
+}
+.position-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #1B2A7B !important;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* ── Ballot candidate grid ── */
+.ballot-candidates-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    justify-items: center;
+}
+.ballot-candidates-grid .candidate-card:only-child {
+    grid-column: 1 / -1;
+    max-width: 50%;
+}
+@media (max-width: 480px) {
+    .ballot-candidates-grid { gap: 0.6rem; }
+    .candidate-card { padding: 1rem 0.5rem !important; gap: 0.5rem !important; }
+    .candidate-avatar { width: 60px !important; height: 60px !important; }
+    .candidate-avatar-placeholder { width: 60px !important; height: 60px !important; }
+}
+
+/* ── Candidate card (white + navy outline) ── */
+.candidate-card {
+    width: 100%;
+    border: 2px solid #1B2A7B;
+    border-radius: 16px;
+    padding: 1.25rem 0.75rem;
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, background 0.2s ease;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    position: relative;
+}
+.candidate-card:hover {
+    border-color: #2563eb;
+    box-shadow: 0 6px 20px rgba(27,42,123,0.18);
+    transform: translateY(-2px);
+    background: #f0f5ff;
+}
+.candidate-card.selected {
+    border-color: #2563eb;
+    border-width: 2.5px;
+    box-shadow: 0 4px 24px rgba(37,99,235,0.25);
+    background: #eff6ff;
+}
+.candidate-card.voted-already {
+    border-color: rgba(16,185,129,0.4);
+    background: #f0fdf4;
+    cursor: default;
+}
+.candidate-card input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* ── Check indicator ── */
+.candidate-check {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid #1B2A7B;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+.candidate-card.selected .candidate-check {
+    border-color: #2563eb;
+    background: #2563eb;
+    box-shadow: 0 0 8px rgba(37,99,235,0.5);
+}
+.candidate-card.selected .candidate-check svg { display: block; }
+.candidate-check svg {
+    display: none;
+    width: 12px;
+    height: 12px;
+    color: #ffffff;
+}
+
+/* ── Candidate avatar ── */
+.candidate-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #1B2A7B;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(27,42,123,0.15);
+}
+.candidate-avatar-placeholder {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1B2A7B, #2563eb);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border: 3px solid #1B2A7B;
+    box-shadow: 0 4px 12px rgba(27,42,123,0.15);
+}
+.candidate-card.selected .candidate-avatar,
+.candidate-card.selected .candidate-avatar-placeholder {
+    border-color: #f97316;
+    box-shadow: 0 0 16px rgba(249,115,22,0.45);
+}
+
+/* ── Candidate name ── */
+.candidate-name {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #1B2A7B !important;
+    text-align: center;
+    line-height: 1.2;
+}
+.candidate-id {
+    font-size: 0.7rem;
+    color: rgba(27,42,123,0.55) !important;
+    text-align: center;
+}
+
+/* ── Submit button ── */
+.vote-submit-btn {
+    width: 100%;
+    padding: 0.9rem;
+    border-radius: 14px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, #1B2A7B 0%, #2563eb 100%);
+    color: white;
+    box-shadow: 0 4px 20px rgba(27,42,123,0.35);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.vote-submit-btn:hover {
+    box-shadow: 0 6px 28px rgba(27,42,123,0.5);
+    transform: translateY(-1px);
+}
+
+/* ── Divider ── */
+.dark-divider {
+    border: none;
+    border-top: 1px solid rgba(27,42,123,0.08);
+    margin: 1.5rem 0;
+}
+
+/* ── Org banner ── */
+.vote-org-banner {
+    width: 100%;
+    height: 200px;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    border-radius: 0 0 20px 20px;
+    margin-bottom: 1.5rem;
+    position: relative;
+    z-index: 2;
+    box-shadow: 0 4px 20px rgba(27,42,123,0.15);
+    overflow: hidden;
+}
+.vote-org-banner--fallback {
+    background: linear-gradient(135deg, #1B2A7B 0%, #2563eb 100%);
+}
+/* Frosted glass overlay — left ~55% of banner */
+.vote-banner-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right,
+        rgba(27,42,123,0.88) 0%,
+        rgba(27,42,123,0.75) 40%,
+        rgba(27,42,123,0.3) 65%,
+        transparent 100%
+    );
+    backdrop-filter: blur(0px);
+    display: flex;
+    align-items: center;
+    padding: 1.5rem 2rem;
+}
+/* Blur only the left portion using a pseudo-element trick */
+.vote-banner-blur {
+    position: absolute;
+    inset: 0;
+    width: 60%;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    mask-image: linear-gradient(to right, black 50%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black 50%, transparent 100%);
+    pointer-events: none;
+}
+.vote-banner-content {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    max-width: 60%;
+}
+.vote-banner-back {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.6);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-bottom: 0.25rem;
+    transition: color 0.15s ease;
+}
+.vote-banner-back:hover { color: rgba(255,255,255,0.95); }
+.vote-banner-title {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.2;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+.vote-banner-org {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.2rem;
+}
+.vote-banner-org-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.9);
+}
+@media (max-width: 640px) {
+    .vote-org-banner { height: 150px; border-radius: 0 0 14px 14px; }
+    .vote-banner-overlay { padding: 1rem 1.25rem; }
+    .vote-banner-content { max-width: 80%; }
+    .vote-banner-title { font-size: 1rem; }
+}
+
+/* ── Text overrides ── */
+.vote-counter { color: rgba(27,42,123,0.5) !important; font-size: 0.75rem; }
+
+/* ── Force dark text inside white candidate cards ── */
+.candidate-card * { color: inherit; }
+.candidate-card .candidate-name,
+.candidate-card .candidate-name * { color: #1B2A7B !important; }
+.candidate-card .candidate-id,
+.candidate-card .candidate-id * { color: rgba(27,42,123,0.55) !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Ambient glow orbs -->
+<div class="vote-glow-1"></div>
+<div class="vote-glow-2"></div>
+
+<!-- ── Org Banner with overlaid header info ── -->
+{% if election.organization.banner %}
+<div class="vote-org-banner" style="background-image: url('{{ election.organization.banner.url }}');">
+{% else %}
+<div class="vote-org-banner vote-org-banner--fallback">
+{% endif %}
+  <div class="vote-banner-blur"></div>
+  <div class="vote-banner-overlay">
+    <div class="vote-banner-content">
+      <a href="{% url 'elections:election_list' %}" class="vote-banner-back">← Back to Elections</a>
+      <h1 class="vote-banner-title">{{ election.title }}</h1>
+      <div class="vote-banner-org">
+        {% if election.organization.logo %}
+          <img src="{{ election.organization.logo.url }}" alt="{{ election.organization.name }}"
+               class="w-10 h-10 rounded-full object-cover flex-shrink-0"
+               style="border: 2px solid rgba(255,255,255,0.45);">
+        {% else %}
+          <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+               style="background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.3);">
+            <span style="color:white;font-size:11px;font-weight:700;">{{ election.organization.name|slice:":2"|upper }}</span>
+          </div>
+        {% endif %}
+        <span class="vote-banner-org-name">{{ election.organization.name }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="relative" style="z-index: 2;">
+<div class="max-w-4xl mx-auto">
+
+  {% if messages %}
+  <div class="space-y-2 mb-5">
+    {% for message in messages %}
+    <div class="flex items-start gap-3 px-4 py-3 rounded-xl text-sm font-medium backdrop-blur-sm
+      {% if message.tags == 'error' %}
+        " style="background:rgba(254,226,226,0.85);border:1px solid rgba(239,68,68,0.3);color:#991b1b;">
+      <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      {% elif message.tags == 'success' %}
+        " style="background:rgba(209,250,229,0.85);border:1px solid rgba(16,185,129,0.3);color:#065f46;">
+      <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+      {% else %}
+        " style="background:rgba(219,234,254,0.85);border:1px solid rgba(37,99,235,0.25);color:#1e40af;">
+      <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      {% endif %}
+      <span>{{ message }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Toggle + counter -->
+  <div class="flex items-center justify-between mb-6">
+    <div class="view-toggle">
+      <button id="btn-live" class="active" onclick="showView('live')">
+        <span class="flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 bg-green-400 rounded-full inline-block animate-pulse"></span>
+          Live
+        </span>
+      </button>
+      <button id="btn-ballot" onclick="showView('ballot')">🗳 Ballot</button>
+    </div>
+    <span class="vote-counter">{{ voted_position_ids|length }}/{{ positions|length }} voted</span>
+  </div>
+
+  <!-- ── LIVE VIEW ── -->
+  <div id="view-live">
+    <div class="flex items-center gap-2 mb-4">
+      <span class="w-2 h-2 bg-green-400 rounded-full inline-block animate-pulse"></span>
+      <span class="text-xs font-medium" style="color: rgba(27,42,123,0.5);">Updates every 5 seconds</span>
+    </div>
+    <div id="live-count"
+         hx-get="{% url 'elections:live_count' election.id %}"
+         hx-trigger="every 5s"
+         hx-swap="innerHTML">
+      {% include 'elections/_live_count_partial.html' %}
+    </div>
+  </div>
+
+  <!-- ── BALLOT VIEW ── -->
+  <div id="view-ballot" class="hidden">
+    <form method="POST">
+      {% csrf_token %}
+      <div class="space-y-6">
+
+        {% for position in positions %}
+        <div class="position-card">
+
+          <!-- Position name -->
+          <div class="text-center mb-5">
+            <p class="position-label">Position</p>
+            <h2 class="position-title">{{ position.name }}</h2>
+            {% if position.id in voted_position_ids %}
+              <span class="inline-flex items-center gap-1 text-xs font-medium mt-2"
+                    style="color: #059669;">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                </svg>
+                Vote cast
+              </span>
+            {% endif %}
+          </div>
+
+          {% if position.id in voted_position_ids %}
+            <p class="text-sm italic text-center" style="color: rgba(27,42,123,0.4);">You have already cast your vote for this position.</p>
+          {% else %}
+            <div class="ballot-candidates-grid">
+              {% for candidate in position.candidates.all %}
+              <label class="candidate-card" for="cand-{{ position.id }}-{{ candidate.id }}">
+                <input type="radio"
+                       id="cand-{{ position.id }}-{{ candidate.id }}"
+                       name="position_{{ position.id }}"
+                       value="{{ candidate.id }}"
+                       required
+                       onchange="selectCandidate(this)">
+
+                <div class="candidate-check">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                  </svg>
+                </div>
+
+                {% if candidate.user.profile_picture %}
+                  <img src="{{ candidate.user.profile_picture.url }}"
+                       alt="{{ candidate.user.get_full_name }}"
+                       class="candidate-avatar">
+                {% else %}
+                  <div class="candidate-avatar-placeholder">
+                    <span class="text-white text-xl font-bold">
+                      {{ candidate.user.first_name|first }}{{ candidate.user.last_name|first }}
+                    </span>
+                  </div>
+                {% endif %}
+
+                <div class="text-center">
+                  <p class="candidate-name">{{ candidate.user.get_full_name }}</p>
+                  <p class="candidate-id">{{ candidate.user.student_id }}</p>
+                </div>
+              </label>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+        </div>
+        {% endfor %}
+
+      </div>
+
+      {% if voted_position_ids|length < positions|length %}
+      <button type="submit" class="vote-submit-btn mt-6">
+        Submit Votes
+      </button>
+      {% else %}
+      <div class="mt-6 text-center py-4 rounded-xl"
+           style="background: rgba(209,250,229,0.6); border: 1px solid rgba(16,185,129,0.3);">
+        <p class="text-sm font-semibold" style="color: #065f46;">✓ You have voted on all positions.</p>
+      </div>
+      {% endif %}
+    </form>
+  </div>
+
+</div><!-- end max-w-4xl -->
+</div><!-- end relative z-2 -->
+<div class="md:hidden" style="height: 6rem;"></div>
+
+<script>
+function showView(name) {
+    document.getElementById('view-live').classList.toggle('hidden', name !== 'live');
+    document.getElementById('view-ballot').classList.toggle('hidden', name !== 'ballot');
+    document.getElementById('btn-live').classList.toggle('active', name === 'live');
+    document.getElementById('btn-ballot').classList.toggle('active', name === 'ballot');
+}
+
+function selectCandidate(radio) {
+    var name = radio.name;
+    document.querySelectorAll('input[name="' + name + '"]').forEach(function(r) {
+        r.closest('.candidate-card').classList.toggle('selected', r.checked);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.candidate-card input[type="radio"]').forEach(function(r) {
+        if (r.checked) r.closest('.candidate-card').classList.add('selected');
+    });
+});
+</script>
+{% endblock %}

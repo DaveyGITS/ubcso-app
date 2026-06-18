@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}Settings — UB-CSO{% endblock %}
+{% block breadcrumb %}Settings{% endblock %}
+{% block mobile_title %}Settings{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto">
+
+    <div class="mb-6">
+        <h1 class="text-xl font-semibold text-gray-900">Settings</h1>
+        <p class="text-sm text-gray-400 mt-0.5">Manage your preferences</p>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+        <div class="mb-4 p-3 rounded-lg text-sm {% if message.tags == 'error' %}bg-red-50 text-red-600 border border-red-200{% else %}bg-green-50 text-green-600 border border-green-200{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Preferences -->
+    <form method="POST">
+        {% csrf_token %}
+        <div class="bg-white rounded-2xl border border-gray-200 p-6 mb-4">
+            <h2 class="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wider">Preferences</h2>
+            <div class="space-y-5">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-800">Email notifications</p>
+                        <p class="text-xs text-gray-400 mt-0.5">Receive important updates via email</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="email_notifications" class="sr-only peer"
+                               {% if user.email_notifications %}checked{% endif %}>
+                        <div class="w-10 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:bg-navy transition-colors"></div>
+                        <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-4"></div>
+                    </label>
+                </div>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-800">Low-data mode</p>
+                        <p class="text-xs text-gray-400 mt-0.5">Hides images and heavy assets to save bandwidth</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="low_data_mode" class="sr-only peer"
+                               {% if user.low_data_mode %}checked{% endif %}>
+                        <div class="w-10 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:bg-navy transition-colors"></div>
+                        <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-4"></div>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <button type="submit" class="w-full py-2.5 bg-navy text-white rounded-lg text-sm font-medium hover:bg-navy-light transition-colors mb-6">
+            Save settings
+        </button>
+    </form>
+
+    <!-- System Rules (visible to all) -->
+    {% if system_settings.system_rules %}
+    <div class="bg-white rounded-2xl border border-gray-200 p-6 mb-4">
+        <h2 class="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">System Rules</h2>
+        <p class="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{{ system_settings.system_rules }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Admin Guide (visible to admins only) -->
+    {% if user.is_cso_admin or user.is_cso_president %}
+    {% if system_settings.admin_guide %}
+    <div class="bg-white rounded-2xl border border-gray-200 p-6 mb-4">
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">Admin Guide</h2>
+            {% if user.is_cso_president %}
+            <a href="{% url 'core:system_settings' %}" class="text-xs text-navy hover:underline">Edit →</a>
+            {% endif %}
+        </div>
+        <p class="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{{ system_settings.admin_guide }}</p>
+    </div>
+    {% elif user.is_cso_president %}
+    <div class="bg-navy bg-opacity-5 border border-navy border-opacity-10 rounded-2xl p-5 mb-4">
+        <p class="text-sm text-navy font-medium mb-1">No admin guide set yet</p>
+        <p class="text-xs text-gray-500 mb-3">Add an admin guide to help new admins get started.</p>
+        <a href="{% url 'core:system_settings' %}" class="text-xs bg-navy text-white px-3 py-1.5 rounded-lg hover:bg-navy-light transition-colors font-medium">
+            Set up admin guide →
+        </a>
+    </div>
+    {% endif %}
+    {% endif %}
+
+    <div class="mt-2 text-center">
+        <a href="{% url 'accounts:edit_profile' %}" class="text-sm text-navy hover:underline">Edit profile →</a>
+    </div>
+
+</div>
+{% endblock %}

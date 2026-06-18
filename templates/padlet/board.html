@@ -1,0 +1,931 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ board.title }} — NoteBoard — UB-CSO{% endblock %}
+{% block breadcrumb %}NoteBoard / {{ board.title|truncatechars:30 }}{% endblock %}
+{% block mobile_title %}{{ board.title|truncatechars:20 }}{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Page ── */
+#main-content {
+    padding: 0 !important;
+    margin: 0 !important;
+    /* Match the board header color so the gap above the board looks seamless */
+    {% if board.scope == 'system' %}
+    background: linear-gradient(160deg, #f5c518 0%, #f07020 40%, #e8380a 80%, #c0392b 100%) !important;
+    {% elif board.board_color == 'blue-slate' %}background: linear-gradient(160deg, #6a8fc5 0%, #4a6fa5 50%, #2d4a7a 100%) !important;
+    {% elif board.board_color == 'blue-ocean' %}background: linear-gradient(160deg, #3ea8e8 0%, #1e88c8 50%, #0d5a8a 100%) !important;
+    {% elif board.board_color == 'blue-denim' %}background: linear-gradient(160deg, #5a7faa 0%, #3a5f8a 50%, #1e3a5f 100%) !important;
+    {% elif board.board_color == 'blue-sky' %}background: linear-gradient(160deg, #7bd8f8 0%, #5bb8e8 50%, #2a8abf 100%) !important;
+    {% elif board.board_color == 'green-sage' %}background: linear-gradient(160deg, #9acbaa 0%, #7aab8a 50%, #4a7a5a 100%) !important;
+    {% elif board.board_color == 'green-forest' %}background: linear-gradient(160deg, #5a9a6a 0%, #3a7a4a 50%, #1e4a2a 100%) !important;
+    {% elif board.board_color == 'green-mint' %}background: linear-gradient(160deg, #8eefca 0%, #6ecfa8 50%, #3aaa7a 100%) !important;
+    {% elif board.board_color == 'green-olive' %}background: linear-gradient(160deg, #aabc6a 0%, #8a9a4a 50%, #5a6a2a 100%) !important;
+    {% elif board.board_color == 'purple-grape' %}background: linear-gradient(160deg, #9a6aba 0%, #7a4a9a 50%, #4a2a6a 100%) !important;
+    {% elif board.board_color == 'purple-lavender' %}background: linear-gradient(160deg, #c09ae8 0%, #a07ac8 50%, #6a4a9a 100%) !important;
+    {% elif board.board_color == 'purple-plum' %}background: linear-gradient(160deg, #8a5a9a 0%, #6a3a7a 50%, #3a1a4a 100%) !important;
+    {% elif board.board_color == 'red-rose' %}background: linear-gradient(160deg, #e87a9a 0%, #c85a7a 50%, #8a2a4a 100%) !important;
+    {% elif board.board_color == 'red-crimson' %}background: linear-gradient(160deg, #e0594b 0%, #c0392b 50%, #7a1a10 100%) !important;
+    {% elif board.board_color == 'pink-blush' %}background: linear-gradient(160deg, #f8c0d8 0%, #e8a0b8 50%, #c06080 100%) !important;
+    {% elif board.board_color == 'warm-sand' %}background: linear-gradient(160deg, #e8c89a 0%, #c8a87a 50%, #8a6a3a 100%) !important;
+    {% elif board.board_color == 'warm-terracotta' %}background: linear-gradient(160deg, #e89a7a 0%, #c87a5a 50%, #8a4a2a 100%) !important;
+    {% elif board.board_color == 'warm-caramel' %}background: linear-gradient(160deg, #e8ba7a 0%, #c89a5a 50%, #8a5a1a 100%) !important;
+    {% elif board.board_color == 'dark-charcoal' %}background: linear-gradient(160deg, #6a6a7a 0%, #4a4a5a 50%, #1a1a2a 100%) !important;
+    {% elif board.board_color == 'dark-midnight' %}background: linear-gradient(160deg, #2a3a5a 0%, #1a2a4a 50%, #0a0a1a 100%) !important;
+    {% else %}background: linear-gradient(160deg, #3B5BBE 0%, #1B2A7B 50%, #0d1a4a 100%) !important;
+    {% endif %}
+}
+/* Desktop: add top padding so board starts below topbar — gap blends with board color */
+@media (min-width: 768px) {
+    #main-content {
+        padding-top: 90px !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        padding-bottom: 0 !important;
+    }
+}
+
+/* ── The board container — fills full width and height ── */
+.board-container {
+    border-radius: 0;
+    overflow: hidden;
+    box-shadow: none;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: calc(100vh - 76px); /* mobile: subtract mobile topbar */
+}
+@media (min-width: 768px) {
+    .board-container {
+        min-height: calc(100vh - 90px); /* desktop: subtract desktop topbar */
+        border-radius: 0.75rem 0.75rem 0 0; /* slight top corners on desktop */
+    }
+}
+    /* Body = darker gradient (was the header) */
+    {% if board.scope == 'system' %}
+    background: linear-gradient(to right, #e8520a 0%, #c0390a 100%);
+    {% elif board.board_color == 'blue-slate' %}background: linear-gradient(to right, #4a6fa5 0%, #3a5a8a 100%);
+    {% elif board.board_color == 'blue-ocean' %}background: linear-gradient(to right, #1e88c8 0%, #1070a8 100%);
+    {% elif board.board_color == 'blue-denim' %}background: linear-gradient(to right, #3a5f8a 0%, #2a4a70 100%);
+    {% elif board.board_color == 'blue-sky' %}background: linear-gradient(to right, #5bb8e8 0%, #3a9acc 100%);
+    {% elif board.board_color == 'green-sage' %}background: linear-gradient(to right, #7aab8a 0%, #5a8a6a 100%);
+    {% elif board.board_color == 'green-forest' %}background: linear-gradient(to right, #3a7a4a 0%, #2a6038 100%);
+    {% elif board.board_color == 'green-mint' %}background: linear-gradient(to right, #6ecfa8 0%, #4ab088 100%);
+    {% elif board.board_color == 'green-olive' %}background: linear-gradient(to right, #8a9a4a 0%, #6a7a38 100%);
+    {% elif board.board_color == 'purple-grape' %}background: linear-gradient(to right, #7a4a9a 0%, #5a3078 100%);
+    {% elif board.board_color == 'purple-lavender' %}background: linear-gradient(to right, #a07ac8 0%, #8060a8 100%);
+    {% elif board.board_color == 'purple-plum' %}background: linear-gradient(to right, #6a3a7a 0%, #4a2058 100%);
+    {% elif board.board_color == 'red-rose' %}background: linear-gradient(to right, #c85a7a 0%, #a83a58 100%);
+    {% elif board.board_color == 'red-crimson' %}background: linear-gradient(to right, #c0392b 0%, #a02018 100%);
+    {% elif board.board_color == 'pink-blush' %}background: linear-gradient(to right, #e8a0b8 0%, #c87898 100%);
+    {% elif board.board_color == 'warm-sand' %}background: linear-gradient(to right, #c8a87a 0%, #a88858 100%);
+    {% elif board.board_color == 'warm-terracotta' %}background: linear-gradient(to right, #c87a5a 0%, #a85a38 100%);
+    {% elif board.board_color == 'warm-caramel' %}background: linear-gradient(to right, #c89a5a 0%, #a87838 100%);
+    {% elif board.board_color == 'dark-charcoal' %}background: linear-gradient(to right, #4a4a5a 0%, #303040 100%);
+    {% elif board.board_color == 'dark-midnight' %}background: linear-gradient(to right, #1a2a4a 0%, #0e1a30 100%);
+    {% else %}background: linear-gradient(to right, #3B5BBE 0%, #2a4a9e 100%);
+    {% endif %}
+}
+
+/* ── Board header — lighter gradient (was the body) ── */
+.board-header {
+    /* Header = lighter gradient (was the container body) */
+    {% if board.scope == 'system' %}
+    background: linear-gradient(160deg, #f5c518 0%, #f07020 40%, #e8380a 80%, #c0392b 100%);
+    {% elif board.board_color == 'blue-slate' %}background: linear-gradient(160deg, #6a8fc5 0%, #4a6fa5 50%, #2d4a7a 100%);
+    {% elif board.board_color == 'blue-ocean' %}background: linear-gradient(160deg, #3ea8e8 0%, #1e88c8 50%, #0d5a8a 100%);
+    {% elif board.board_color == 'blue-denim' %}background: linear-gradient(160deg, #5a7faa 0%, #3a5f8a 50%, #1e3a5f 100%);
+    {% elif board.board_color == 'blue-sky' %}background: linear-gradient(160deg, #7bd8f8 0%, #5bb8e8 50%, #2a8abf 100%);
+    {% elif board.board_color == 'green-sage' %}background: linear-gradient(160deg, #9acbaa 0%, #7aab8a 50%, #4a7a5a 100%);
+    {% elif board.board_color == 'green-forest' %}background: linear-gradient(160deg, #5a9a6a 0%, #3a7a4a 50%, #1e4a2a 100%);
+    {% elif board.board_color == 'green-mint' %}background: linear-gradient(160deg, #8eefca 0%, #6ecfa8 50%, #3aaa7a 100%);
+    {% elif board.board_color == 'green-olive' %}background: linear-gradient(160deg, #aabc6a 0%, #8a9a4a 50%, #5a6a2a 100%);
+    {% elif board.board_color == 'purple-grape' %}background: linear-gradient(160deg, #9a6aba 0%, #7a4a9a 50%, #4a2a6a 100%);
+    {% elif board.board_color == 'purple-lavender' %}background: linear-gradient(160deg, #c09ae8 0%, #a07ac8 50%, #6a4a9a 100%);
+    {% elif board.board_color == 'purple-plum' %}background: linear-gradient(160deg, #8a5a9a 0%, #6a3a7a 50%, #3a1a4a 100%);
+    {% elif board.board_color == 'red-rose' %}background: linear-gradient(160deg, #e87a9a 0%, #c85a7a 50%, #8a2a4a 100%);
+    {% elif board.board_color == 'red-crimson' %}background: linear-gradient(160deg, #e0594b 0%, #c0392b 50%, #7a1a10 100%);
+    {% elif board.board_color == 'pink-blush' %}background: linear-gradient(160deg, #f8c0d8 0%, #e8a0b8 50%, #c06080 100%);
+    {% elif board.board_color == 'warm-sand' %}background: linear-gradient(160deg, #e8c89a 0%, #c8a87a 50%, #8a6a3a 100%);
+    {% elif board.board_color == 'warm-terracotta' %}background: linear-gradient(160deg, #e89a7a 0%, #c87a5a 50%, #8a4a2a 100%);
+    {% elif board.board_color == 'warm-caramel' %}background: linear-gradient(160deg, #e8ba7a 0%, #c89a5a 50%, #8a5a1a 100%);
+    {% elif board.board_color == 'dark-charcoal' %}background: linear-gradient(160deg, #6a6a7a 0%, #4a4a5a 50%, #1a1a2a 100%);
+    {% elif board.board_color == 'dark-midnight' %}background: linear-gradient(160deg, #2a3a5a 0%, #1a2a4a 50%, #0a0a1a 100%);
+    {% else %}background: linear-gradient(160deg, #3B5BBE 0%, #1B2A7B 50%, #0d1a4a 100%);
+    {% endif %}
+    border-bottom: none;
+}
+.board-header-content { padding: 72px 1.5rem 1.25rem; }
+@media (min-width: 768px) {
+    .board-header-content { padding: 1.5rem 1.5rem 1.25rem; }
+}
+
+/* ── Manager actions dropdown ── */
+.mgr-menu {
+    display: none;
+    position: absolute;
+    right: 0; top: calc(100% + 0.5rem);
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 0.625rem;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    min-width: 160px;
+    z-index: 10002;
+    overflow: hidden;
+}
+.mgr-menu.open { display: block; }
+.mgr-menu a, .mgr-menu button {
+    display: flex; align-items: center; gap: 0.5rem;
+    width: 100%; padding: 0.625rem 1rem;
+    font-size: 0.8rem; font-weight: 500;
+    text-align: left; background: none; border: none; cursor: pointer;
+    color: #374151; transition: background 0.1s;
+    text-decoration: none;
+}
+.mgr-menu a:hover, .mgr-menu button:hover { background: rgba(0,0,0,0.05); }
+.mgr-menu .danger { color: #dc2626; }
+.mgr-menu .danger:hover { background: rgba(220,38,38,0.08); }
+
+/* ── Board header transition ── */
+.board-header { transition: all 0.3s ease; }
+/* Don't use overflow:hidden on the header — it clips the dropdown */
+.board-header-content {
+    transition: padding 0.3s ease, max-height 0.3s ease, opacity 0.3s ease;
+    max-height: 500px;
+    opacity: 1;
+    overflow: visible;
+}
+.board-header.collapsed .board-header-content {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+}
+/* Keep the pill wrap always visible */
+/* ── Header collapse pill ── */
+.header-toggle-wrap {
+    display: flex;
+    justify-content: center;
+    padding: 0.4rem 0 0.3rem;
+}
+.header-toggle {
+    width: 3rem; height: 0.3rem;
+    background: rgba(255,255,255,0.5);
+    border-radius: 9999px;
+    border: none; cursor: pointer;
+    transition: background 0.15s, width 0.15s;
+    display: block;
+}
+.header-toggle:hover { background: rgba(255,255,255,0.85); width: 4rem; }
+.board-notes-area {
+    background: rgba(255,255,255,0.12);
+    backdrop-filter: blur(2px);
+    padding: 1.25rem;
+    padding-bottom: 6rem; /* Add extra padding for mobile bottom nav */
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* Desktop: reduce bottom padding since no bottom nav */
+@media (min-width: 768px) {
+    .board-notes-area {
+        padding-bottom: 1.25rem;
+    }
+}
+
+/* ── Masonry grid ── */
+.masonry-grid { columns: 2; column-gap: 1rem; }
+@media (min-width: 768px)  { .masonry-grid { columns: 3; } }
+@media (min-width: 1024px) { .masonry-grid { columns: 4; } }
+
+/* ── Post card ── */
+.post-card { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.post-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+
+/* ── Note modal ── */
+#note-modal {
+    display: none; position: fixed; inset: 0; z-index: 9000;
+    background: rgba(0,0,0,0.6);
+    align-items: center; justify-content: center; padding: 1rem;
+}
+#note-modal.open { display: flex; }
+#note-modal-inner {
+    background: white; border-radius: 1.25rem;
+    width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.3);
+}
+
+/* ── Add note modal ── */
+#add-note-modal {
+    display: none; position: fixed; inset: 0; z-index: 9000;
+    background: rgba(0,0,0,0.5);
+    align-items: flex-end; justify-content: center; padding: 0;
+}
+#add-note-modal.open { display: flex; }
+#add-note-inner {
+    background: white; border-radius: 1.25rem 1.25rem 0 0;
+    width: 100%; max-width: 640px;
+    box-shadow: 0 -8px 32px rgba(0,0,0,0.2);
+    animation: slideUp 0.25s ease;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+#add-note-header {
+    padding: 1.25rem 1.5rem 0.75rem;
+    flex-shrink: 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+#add-note-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem 1.5rem;
+    -webkit-overflow-scrolling: touch;
+}
+#add-note-footer {
+    padding: 0.75rem 1.5rem;
+    padding-bottom: max(1.25rem, calc(env(safe-area-inset-bottom) + 4.5rem));
+    flex-shrink: 0;
+    border-top: 1px solid #f3f4f6;
+}
+#attach-preview img {
+    max-height: 180px;
+    width: 100%;
+    object-fit: cover;
+}
+@keyframes slideUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ── Color swatches ── */
+.color-swatch { width: 1.75rem; height: 1.75rem; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.1s, border-color 0.1s; }
+.color-swatch:hover { transform: scale(1.15); }
+.color-swatch.selected { border-color: #1B2A7B; transform: scale(1.15); }
+.swatch-yellow { background: #fef08a; }
+.swatch-blue   { background: #bfdbfe; }
+.swatch-green  { background: #bbf7d0; }
+.swatch-pink   { background: #fbcfe8; }
+.swatch-purple { background: #e9d5ff; }
+.swatch-white  { background: #ffffff; border: 1.5px solid #e5e7eb; }
+
+/* ── FAB ── */
+#fab-add {
+    position: fixed; 
+    bottom: 6rem; /* Position above mobile bottom nav */
+    right: 1.5rem;
+    width: 3.5rem; height: 3.5rem;
+    border-radius: 50%;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; z-index: 9999;
+    transition: transform 0.3s ease, opacity 0.3s ease, box-shadow 0.15s, background 0.3s;
+    border: none;
+    opacity: 1;
+    /* Default: add note — matches board color */
+    {% if board.scope == 'system' %}background: linear-gradient(135deg, #e8520a, #c0390a);
+    {% elif board.board_color == 'blue-slate' or board.board_color == 'blue-ocean' or board.board_color == 'blue-denim' or board.board_color == 'blue-sky' %}background: linear-gradient(135deg, #4a6fa5, #2d4a7a);
+    {% elif board.board_color == 'green-sage' or board.board_color == 'green-forest' or board.board_color == 'green-mint' or board.board_color == 'green-olive' %}background: linear-gradient(135deg, #3a7a4a, #1e4a2a);
+    {% elif board.board_color == 'purple-grape' or board.board_color == 'purple-lavender' or board.board_color == 'purple-plum' %}background: linear-gradient(135deg, #7a4a9a, #4a2a6a);
+    {% elif board.board_color == 'red-rose' or board.board_color == 'red-crimson' or board.board_color == 'pink-blush' %}background: linear-gradient(135deg, #c85a7a, #8a2a4a);
+    {% elif board.board_color == 'warm-sand' or board.board_color == 'warm-terracotta' or board.board_color == 'warm-caramel' %}background: linear-gradient(135deg, #c87a5a, #8a4a2a);
+    {% elif board.board_color == 'dark-charcoal' or board.board_color == 'dark-midnight' %}background: linear-gradient(135deg, #4a4a5a, #1a1a2a);
+    {% else %}background: linear-gradient(135deg, #3B5BBE, #1B2A7B);
+    {% endif %}
+}
+#fab-add:hover { transform: scale(1.08); box-shadow: 0 8px 24px rgba(0,0,0,0.35); }
+#fab-add.hidden-fab { 
+    opacity: 0; 
+    transform: translateX(120px); /* Slide to the right instead of down */
+    pointer-events: none;
+}
+/* Desktop: position FAB lower since no bottom nav */
+@media (min-width: 768px) {
+    #fab-add {
+        bottom: 1.5rem;
+    }
+}
+#fab-add.find-mode { background: linear-gradient(135deg, #f59e0b, #d97706) !important; }
+#fab-add .fab-icon-add { display: flex; }
+#fab-add .fab-icon-find { display: none; }
+#fab-add.find-mode .fab-icon-add { display: none; }
+#fab-add.find-mode .fab-icon-find { display: flex; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# ── Board container — fills full width ── #}
+<div class="board-container">
+
+    {# ── Board header ── #}
+    <div class="board-header" id="board-header">
+        <div class="board-header-content">
+            <div class="flex items-start justify-between gap-3">
+
+                {# Left: text stack only — no logo #}
+                <div class="flex-1 min-w-0">
+                    {% if board.organization %}
+                    <p class="text-xs font-semibold uppercase tracking-widest mb-0.5 text-white" style="opacity:0.65;">{{ board.organization.name }}</p>
+                    {% endif %}
+                    <h1 class="text-2xl font-black leading-tight text-white" style="font-family: 'Poppins', sans-serif; text-shadow: 0 1px 3px rgba(0,0,0,0.3);">{{ board.title }}</h1>
+
+                    {# Creator chip — org boards only #}
+                    {% if board.scope == 'org' and board.created_by %}
+                    <div class="flex items-center gap-1.5 mt-2">
+                        {% if board.created_by.profile_picture %}
+                        <img src="{{ board.created_by.profile_picture.url }}"
+                             class="w-5 h-5 rounded-full object-cover flex-shrink-0"
+                             style="border: 1.5px solid rgba(255,255,255,0.5);">
+                        {% else %}
+                        <div class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-white"
+                             style="background:rgba(255,255,255,0.25); font-size:0.55rem; font-weight:700; border: 1.5px solid rgba(255,255,255,0.4);">
+                            {{ board.created_by.first_name|first }}{{ board.created_by.last_name|first }}
+                        </div>
+                        {% endif %}
+                        <span class="text-xs text-white" style="opacity:0.6;">{{ board.created_by.get_full_name }}</span>
+                    </div>
+                    {% endif %}
+
+                    {% if board.description %}
+                    <div class="mt-1.5 overflow-hidden" id="board-desc-wrap">
+                        {# Collapsed: one line with truncated text + see more inline #}
+                        <div id="board-desc-collapsed" class="flex items-baseline gap-x-1 flex-nowrap min-w-0">
+                            <span class="text-sm leading-relaxed text-white truncate" style="opacity:0.8;">{{ board.description|truncatechars:30 }}</span>
+                            {% if board.description|length > 30 %}
+                            <button onclick="toggleDesc()"
+                                    class="text-xs font-medium text-white underline underline-offset-2 flex-shrink-0 whitespace-nowrap" style="opacity:0.65;">
+                                see more
+                            </button>
+                            {% endif %}
+                        </div>
+                        {# Expanded: full text block + see less below #}
+                        {% if board.description|length > 30 %}
+                        <div id="board-desc-expanded" class="hidden">
+                            <p class="text-sm leading-relaxed text-white break-words" style="opacity:0.8;">{{ board.description }}</p>
+                            <button onclick="toggleDesc()"
+                                    class="text-xs font-medium text-white underline underline-offset-2 mt-1 block" style="opacity:0.65;">
+                                see less
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                {# Right: back button + three-dots menu (managers) or just back button #}
+                {% if is_manager %}
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    {# Back button #}
+                    <a href="{% url 'padlet:padlet_list' %}"
+                       class="flex items-center justify-center w-8 h-8 rounded-full transition-colors"
+                       style="background:rgba(255,255,255,0.2);"
+                       title="Back to NoteBoard">
+                        <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                        </svg>
+                    </a>
+                    {# Three-dots menu #}
+                    <div class="relative" id="mgr-menu-wrap">
+                        <button onclick="toggleMgrMenu()" id="mgr-menu-btn"
+                                class="flex items-center justify-center w-8 h-8 rounded-full transition-colors"
+                                style="background:rgba(255,255,255,0.2);"
+                                aria-label="Board options">
+                            <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <circle cx="12" cy="5" r="1.5"/>
+                                <circle cx="12" cy="12" r="1.5"/>
+                                <circle cx="12" cy="19" r="1.5"/>
+                            </svg>
+                        </button>
+                    <div class="mgr-menu" id="mgr-menu">
+                        <a href="{% url 'padlet:padlet_edit' board.id %}">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                            Edit board
+                        </a>
+                        {% if board.status == 'active' %}
+                        <form method="post" action="{% url 'padlet:padlet_archive_board' board.id %}">
+                            {% csrf_token %}
+                            <button type="submit">
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8l1 12a2 2 0 002 2h8a2 2 0 002-2l1-12"/>
+                                </svg>
+                                Archive board
+                            </button>
+                        </form>
+                        {% else %}
+                        <form method="post" action="{% url 'padlet:padlet_archive_board' board.id %}">
+                            {% csrf_token %}
+                            <button type="submit">
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                                </svg>
+                                Unarchive board
+                            </button>
+                        </form>
+                        {% endif %}
+                        <form method="post" action="{% url 'padlet:padlet_delete_board' board.id %}" onsubmit="return confirm('Delete this board and all its notes? This cannot be undone.')">
+                            {% csrf_token %}
+                            <button type="submit" class="danger">
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                                Delete board
+                            </button>
+                        </form>
+                    </div>{# end mgr-menu #}
+                    </div>{# end mgr-menu-wrap #}
+                </div>{# end flex wrapper #}
+                {% else %}
+                {# Non-managers: just back button #}
+                <a href="{% url 'padlet:padlet_list' %}"
+                   class="flex items-center justify-center w-8 h-8 rounded-full flex-shrink-0 transition-colors"
+                   style="background:rgba(255,255,255,0.2);"
+                   title="Back to NoteBoard">
+                    <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                </a>
+                {% endif %}
+
+            </div>
+        </div>{# end board-header-content #}
+
+        {# ── Hide/show toggle pill ── #}
+        <div class="header-toggle-wrap">
+            <button class="header-toggle" onclick="toggleHeader()" id="header-toggle-btn" aria-label="Toggle header"></button>
+        </div>
+    </div>{# end board-header #}
+
+    {# ── Notes area ── #}
+    <div class="board-notes-area">
+        <div class="masonry-grid" id="posts-grid">
+            {% for post in posts %}
+            {% include "padlet/_post_card.html" with post=post board=board user_reactions=user_reactions is_manager=is_manager reaction_choices=reaction_choices %}
+            {% endfor %}
+        </div>
+        {% if not posts %}
+        <div class="text-center py-16" id="empty-board-msg">
+            <svg class="w-14 h-14 text-white text-opacity-30 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            <p class="text-white text-opacity-60 font-medium">No notes yet</p>
+            {% if can_post %}
+            <p class="text-white text-opacity-40 text-sm mt-1">Tap + to add the first note</p>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+</div>{# end board-container #}
+
+{# ── Back link now in header — removed from bottom ── #}
+
+{# ── FAB — add note or find my note ── #}
+{% if can_post or user_already_posted %}
+<button id="fab-add" onclick="fabAction()" aria-label="Add note" title="Add a note">
+    <span class="fab-icon-add">
+        <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+        </svg>
+    </span>
+    <span class="fab-icon-find">
+        <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+        </svg>
+    </span>
+</button>
+{% endif %}
+
+{# ── Add note modal ── #}
+{% if can_post %}
+<div id="add-note-modal" onclick="closeAddModal(event)">
+    <div id="add-note-inner" onclick="event.stopPropagation()">
+
+        {# Header — fixed, never scrolls #}
+        <div id="add-note-header" class="flex items-center justify-between">
+            <h2 class="text-base font-semibold text-gray-900">Add a note</h2>
+            <button onclick="closeAddModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        {# Scrollable body #}
+        <div id="add-note-body">
+        <form id="add-note-form"
+              hx-post="{% url 'padlet:padlet_add_post' board.id %}"
+              hx-target="#posts-grid"
+              hx-swap="afterbegin"
+              hx-on::after-request="onNoteAdded(event)"
+              hx-encoding="multipart/form-data">
+            {% csrf_token %}
+            <textarea name="title" rows="1" placeholder="Title (optional)"
+                   class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-navy mb-3 resize-none overflow-hidden"
+                   oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+            <div id="note-preview" class="rounded-xl p-4 mb-3 min-h-24 transition-colors" style="background-color: #fef9c3;">
+                <textarea id="note-content" name="content" rows="4" required
+                          placeholder="What's on your mind?"
+                          class="w-full bg-transparent resize-none text-sm text-gray-800 placeholder-gray-400 focus:outline-none leading-relaxed"
+                          oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+            </div>
+            <input type="url" name="link_url" placeholder="Link URL (optional)"
+                   class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-navy mb-3">
+
+            {# ── Attachment upload ── #}
+            <div class="mb-3">
+                <label class="block text-xs text-gray-500 font-medium mb-1.5">Attachment <span class="text-gray-400">(image, optional)</span></label>
+                <label class="flex items-center gap-2 cursor-pointer border border-dashed border-gray-300 rounded-xl px-3 py-2.5 hover:border-navy hover:bg-gray-50 transition-colors">
+                    <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13"/>
+                    </svg>
+                    <span id="attach-label" class="text-sm text-gray-400 truncate">Choose image…</span>
+                    <input type="file" name="attachment" id="attach-input" accept="image/*"
+                           class="hidden" onchange="updateAttachLabel(this)">
+                </label>
+                <div id="attach-preview" class="hidden mt-2 relative rounded-xl overflow-hidden">
+                    <img id="attach-img-preview" src="" alt="" class="w-full rounded-xl">
+                    <button type="button" onclick="clearAttachment()"
+                            class="absolute top-1 right-1 w-6 h-6 bg-black bg-opacity-50 rounded-full flex items-center justify-center text-white text-xs">✕</button>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 mb-4">
+                <span class="text-xs text-gray-500 font-medium mr-1">Color</span>
+                <button type="button" class="color-swatch swatch-yellow selected" data-color="yellow" onclick="selectColor('yellow')"></button>
+                <button type="button" class="color-swatch swatch-blue"   data-color="blue"   onclick="selectColor('blue')"></button>
+                <button type="button" class="color-swatch swatch-green"  data-color="green"  onclick="selectColor('green')"></button>
+                <button type="button" class="color-swatch swatch-pink"   data-color="pink"   onclick="selectColor('pink')"></button>
+                <button type="button" class="color-swatch swatch-purple" data-color="purple" onclick="selectColor('purple')"></button>
+                <button type="button" class="color-swatch swatch-white"  data-color="white"  onclick="selectColor('white')"></button>
+            </div>
+            <input type="hidden" name="color" id="color-input" value="yellow">
+            <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" name="is_anonymous" class="rounded border-gray-300 text-navy focus:ring-navy">
+                <span class="text-sm text-gray-600">Post anonymously</span>
+            </label>
+
+        </div>{# end add-note-body #}
+
+        {# Footer — submit button, always visible #}
+        <div id="add-note-footer">
+            <button type="submit" form="add-note-form"
+                    class="w-full bg-navy text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-opacity-90 transition-colors">
+                Post note
+            </button>
+        </div>
+
+        </form>
+    </div>
+</div>
+{% endif %}
+
+{# ── Note detail modal ── #}
+<div id="note-modal" onclick="closeNoteModal(event)">
+    <div id="note-modal-inner" onclick="event.stopPropagation()">
+        <div id="note-modal-content"></div>
+    </div>
+</div>
+
+{# ── Modal container — receives post detail via HTMX ── #}
+<div id="modal-container"></div>
+
+{# ── Lightbox — outside modal so z-index works correctly ── #}
+<div id="lightbox"
+     style="display:none; position:fixed; inset:0; z-index:999999; background:rgba(0,0,0,0.92); align-items:center; justify-content:center; padding:1rem;"
+     onclick="closeLightbox()">
+    <button onclick="closeLightbox(); event.stopPropagation();"
+            style="position:absolute; top:1rem; right:1rem; width:2.25rem; height:2.25rem; border-radius:50%; background:rgba(255,255,255,0.15); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+        <svg style="width:1.25rem;height:1.25rem;color:white;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+    </button>
+    <img id="lb-img" src="" alt=""
+         style="display:none; max-width:100%; max-height:90vh; border-radius:0.75rem; object-fit:contain;"
+         onclick="event.stopPropagation()">
+    <video id="lb-vid" src="" controls
+           style="display:none; max-width:100%; max-height:90vh; border-radius:0.75rem;"
+           onclick="event.stopPropagation()"></video>
+</div>
+
+{# ── Confirm dialog ── #}
+<div id="confirm-dialog" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;">
+    <div style="background:white;border-radius:1rem;padding:1.5rem;max-width:320px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+        <p id="confirm-msg" class="text-sm text-gray-800 font-medium mb-4"></p>
+        <div class="flex gap-2 justify-end">
+            <button id="confirm-cancel" class="px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50">Cancel</button>
+            <button id="confirm-ok" class="px-4 py-2 text-sm text-white bg-red-500 rounded-lg hover:bg-red-600">Confirm</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CSRF = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+
+// ── FAB Auto-hide Logic ── 
+let fabTimer = null;
+let fabActivityTimer = null;
+const FAB_HIDE_DELAY = 3000; // 3 seconds
+
+function hideFAB() {
+    const fab = document.getElementById('fab-add');
+    if (fab) fab.classList.add('hidden-fab');
+}
+
+function showFAB() {
+    const fab = document.getElementById('fab-add');
+    if (fab) fab.classList.remove('hidden-fab');
+}
+
+// Make functions globally available for modal
+window.hideFAB = hideFAB;
+window.showFAB = showFAB;
+
+function resetFABTimer() {
+    // Clear existing timer
+    if (fabTimer) clearTimeout(fabTimer);
+    
+    // Show FAB immediately
+    showFAB();
+    
+    // Set new timer to hide after 3 seconds
+    fabTimer = setTimeout(() => {
+        hideFAB();
+    }, FAB_HIDE_DELAY);
+}
+
+// Make function globally available for modal
+window.resetFABTimer = resetFABTimer;
+
+function handleFABActivity() {
+    // Only respond if modal is not open
+    const noteModalOpen = document.getElementById('note-modal')?.classList.contains('open');
+    const addModalOpen = document.getElementById('add-note-modal')?.classList.contains('open');
+    const postModalOpen = document.getElementById('post-modal') !== null; // Post detail modal exists
+    const modalContainerHasContent = document.getElementById('modal-container')?.innerHTML.trim() !== '';
+    
+    if (!noteModalOpen && !addModalOpen && !postModalOpen && !modalContainerHasContent) {
+        // Show FAB immediately
+        showFAB();
+        
+        // Debounce the timer reset to avoid too many timer resets
+        if (fabActivityTimer) clearTimeout(fabActivityTimer);
+        fabActivityTimer = setTimeout(() => {
+            resetFABTimer();
+        }, 100); // Small delay to debounce rapid events
+    }
+}
+
+// Listen for user activity to show FAB
+['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart', 'click'].forEach(event => {
+    document.addEventListener(event, handleFABActivity, { passive: true });
+});
+
+// Start the timer on page load
+resetFABTimer();
+
+window.openLightbox = function(src, type) {
+    const lb = document.getElementById('lightbox');
+    const lbImg = document.getElementById('lb-img');
+    const lbVid = document.getElementById('lb-vid');
+    if (type === 'image') {
+        lbImg.src = src; lbImg.style.display = 'block';
+        lbVid.style.display = 'none'; if (lbVid.pause) lbVid.pause();
+    } else {
+        lbVid.src = src; lbVid.style.display = 'block';
+        lbImg.style.display = 'none';
+    }
+    lb.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+};
+
+window.closeLightbox = function() {
+    const lb = document.getElementById('lightbox');
+    lb.style.display = 'none';
+    const vid = document.getElementById('lb-vid');
+    if (vid) { vid.pause(); vid.src = ''; }
+    const img = document.getElementById('lb-img');
+    if (img) img.src = '';
+    document.body.style.overflow = '';
+};
+
+window.showConfirm = function(msg) {
+    return new Promise(resolve => {
+        const d = document.getElementById('confirm-dialog');
+        document.getElementById('confirm-msg').textContent = msg;
+        d.style.display = 'flex';
+        document.getElementById('confirm-ok').onclick = () => { d.style.display = 'none'; resolve(true); };
+        document.getElementById('confirm-cancel').onclick = () => { d.style.display = 'none'; resolve(false); };
+    });
+};
+
+function toggleReplyInput(id) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.classList.toggle('hidden');
+        const input = el.querySelector('input[name="content"]');
+        if (input && !el.classList.contains('hidden')) input.focus();
+    }
+}
+
+function updateAttachLabel(input) {
+    const label = document.getElementById('attach-label');
+    const preview = document.getElementById('attach-preview');
+    const imgPrev = document.getElementById('attach-img-preview');
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    label.textContent = file.name;
+    const url = URL.createObjectURL(file);
+    imgPrev.src = url;
+    imgPrev.classList.remove('hidden');
+    preview.classList.remove('hidden');
+}
+function clearAttachment() {
+    document.getElementById('attach-input').value = '';
+    document.getElementById('attach-label').textContent = 'Choose image…';
+    document.getElementById('attach-preview').classList.add('hidden');
+    document.getElementById('attach-img-preview').classList.add('hidden');
+}
+
+function openAddModal() {
+    document.getElementById('add-note-modal').classList.add('open');
+    document.getElementById('note-content').focus();
+    // Hide FAB when add modal opens
+    hideFAB();
+}
+function closeAddModal(e) {
+    if (!e || e.target === document.getElementById('add-note-modal')) {
+        document.getElementById('add-note-modal').classList.remove('open');
+        // Show FAB when add modal closes
+        showFAB();
+        resetFABTimer();
+    }
+}
+function onNoteAdded(e) {
+    if (e.detail.successful) {
+        document.getElementById('add-note-modal').classList.remove('open');
+        document.getElementById('add-note-form').reset();
+        const preview = document.getElementById('note-preview');
+        preview.style.backgroundColor = '#fef9c3';
+        preview.style.border = 'none';
+        document.getElementById('color-input').value = 'yellow';
+        document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+        document.querySelector('[data-color="yellow"]').classList.add('selected');
+        clearAttachment();
+        // Reset auto-grow textareas
+        document.querySelectorAll('#add-note-form textarea').forEach(t => { t.style.height = ''; });
+        // Hide the empty board message once the first note is posted
+        const emptyMsg = document.getElementById('empty-board-msg');
+        if (emptyMsg) emptyMsg.remove();
+        // Switch FAB to "find my note" mode (only for non-managers on single-post boards)
+        {% if not is_manager and not board.allow_multiple_posts %}
+        const fab = document.getElementById('fab-add');
+        if (fab) {
+            fab.classList.add('find-mode');
+            fab.title = 'Find my note';
+        }
+        {% endif %}
+    } else {
+        // Show the real error message — try JSON first, fall back to plain text
+        const raw = e.detail.xhr.responseText || '';
+        let msg = 'An error occurred while adding the note.';
+        try {
+            const parsed = JSON.parse(raw);
+            if (parsed.error) msg = parsed.error;
+        } catch (_) {
+            if (raw.trim()) msg = raw.trim();
+        }
+        alert(msg);
+    }
+}
+
+let userPostedNoteId = null;
+
+function fabAction() {
+    const fab = document.getElementById('fab-add');
+    if (fab && fab.classList.contains('find-mode')) {
+        findMyNote();
+    } else {
+        openAddModal();
+    }
+}
+
+function findMyNote() {
+    // Find the user's own note — look for the one added by the current user
+    // The user's note ID is stored as data-post-id on the card
+    // After posting, it's the first card; on page reload, find by author
+    const cards = document.querySelectorAll('.post-card');
+    let myCard = null;
+
+    {% if user_already_posted %}
+    // Find the card that belongs to the current user
+    // We identify it by checking if it was the most recently added (first in DOM after afterbegin swap)
+    // On page load, we need to find it — use a data attribute set by the server
+    myCard = document.querySelector('.post-card[data-is-mine="true"]') || cards[0];
+    {% else %}
+    myCard = cards[0];
+    {% endif %}
+
+    if (!myCard) return;
+    myCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    myCard.style.transition = 'box-shadow 0.3s ease, transform 0.3s ease';
+    myCard.style.boxShadow = '0 0 0 4px rgba(245,158,11,0.8), 0 8px 24px rgba(0,0,0,0.2)';
+    myCard.style.transform = 'scale(1.03)';
+    setTimeout(() => {
+        myCard.style.boxShadow = '';
+        myCard.style.transform = '';
+    }, 1800);
+}
+
+const colorBg = { 
+    yellow: '#fef9c3', 
+    blue: '#dbeafe', 
+    green: '#dcfce7', 
+    pink: '#fce7f3', 
+    purple: '#ede9fe', 
+    white: '#ffffff' 
+};
+function selectColor(c) {
+    document.getElementById('color-input').value = c;
+    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+    document.querySelector(`[data-color="${c}"]`).classList.add('selected');
+    const preview = document.getElementById('note-preview');
+    preview.style.backgroundColor = colorBg[c] || '#fef9c3';
+    if (c === 'white') {
+        preview.style.border = '1px solid #e5e7eb';
+    } else {
+        preview.style.border = 'none';
+    }
+}
+
+function openPostModal(postId) {
+    fetch(`/noteboard/post/${postId}/detail/`)
+        .then(r => r.text())
+        .then(html => {
+            document.getElementById('note-modal-content').innerHTML = html;
+            document.getElementById('note-modal').classList.add('open');
+            document.body.style.overflow = 'hidden';
+            // Hide FAB when modal opens
+            hideFAB();
+        });
+}
+function closeNoteModal(e) {
+    if (!e || e.target === document.getElementById('note-modal')) {
+        document.getElementById('note-modal').classList.remove('open');
+        document.body.style.overflow = '';
+        // Show FAB when modal closes
+        showFAB();
+        resetFABTimer();
+    }
+}
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeNoteModal(); closeAddModal(); }
+});
+
+/* ── Header toggle ── */
+function toggleHeader() {
+    const header = document.getElementById('board-header');
+    header.classList.toggle('collapsed');
+}
+
+/* ── Manager menu toggle ── */
+function toggleMgrMenu() {
+    document.getElementById('mgr-menu').classList.toggle('open');
+}
+// Close when clicking outside
+document.addEventListener('click', e => {
+    const wrap = document.getElementById('mgr-menu-wrap');
+    if (wrap && !wrap.contains(e.target)) {
+        document.getElementById('mgr-menu')?.classList.remove('open');
+    }
+});
+
+/* ── Description expand/collapse ── */
+function toggleDesc() {
+    const collapsed = document.getElementById('board-desc-collapsed');
+    const expanded  = document.getElementById('board-desc-expanded');
+    if (!collapsed || !expanded) return;
+    collapsed.classList.toggle('hidden');
+    expanded.classList.toggle('hidden');
+}
+
+// If user already has a note, start FAB in find-mode (skip for managers who can always post)
+document.addEventListener('DOMContentLoaded', function() {
+    {% if user_already_posted and not is_manager %}
+    const fab = document.getElementById('fab-add');
+    if (fab) {
+        fab.classList.add('find-mode');
+        fab.title = 'Find my note';
+    }
+    {% endif %}
+});
+</script>
+{% endblock %}

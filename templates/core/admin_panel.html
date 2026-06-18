@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Panel — UB-CSO{% endblock %}
+{% block breadcrumb %}Admin Panel{% endblock %}
+{% block mobile_title %}Admin Panel{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-900 mb-8">Admin Panel</h1>
+    
+    {# ── Accreditation & Registration Controls ────────────────────────────────── #}
+    <div class="mb-8">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">Accreditation & Registration</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <a href="{% url 'organizations:admin_accreditation_panel' %}"
+               class="p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg transition-all hover:border-navy">
+                <div class="flex items-start justify-between mb-2">
+                    <h3 class="font-semibold text-gray-900">Review Applications</h3>
+                    <svg class="w-5 h-5 text-navy" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </div>
+                <p class="text-sm text-gray-500">Process pending accreditation submissions</p>
+            </a>
+
+            <a href="{% url 'organizations:admin_form_links' %}"
+               class="p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg transition-all hover:border-navy">
+                <div class="flex items-start justify-between mb-2">
+                    <h3 class="font-semibold text-gray-900">Form Links</h3>
+                    <svg class="w-5 h-5 text-navy" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.658 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                    </svg>
+                </div>
+                <p class="text-sm text-gray-500">Manage official form download links</p>
+            </a>
+
+            <a href="{% url 'organizations:admin_renewal_requirements' %}"
+               class="p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg transition-all hover:border-navy">
+                <div class="flex items-start justify-between mb-2">
+                    <h3 class="font-semibold text-gray-900">Renewal Requirements</h3>
+                    <svg class="w-5 h-5 text-navy" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <p class="text-sm text-gray-500">Configure renewal document requirements</p>
+            </a>
+        </div>
+    </div>
+
+    {# ── School Year Lifecycle Controls ────────────────────────────────────────── #}
+    <div class="mb-8">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">School Year Lifecycle</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form method="POST" action="{% url 'organizations:admin_new_school_year' %}"
+                  class="p-6 bg-white border border-gray-200 rounded-xl">
+                {% csrf_token %}
+                <h3 class="font-semibold text-gray-900 mb-3">New School Year</h3>
+                <p class="text-sm text-gray-500 mb-4">Transition accredited organizations to renewal_due status and notify chairmen</p>
+                <div class="mb-4">
+                    <label for="renewal_deadline" class="block text-sm font-medium text-gray-700 mb-1">
+                        Renewal Deadline (Optional)
+                    </label>
+                    <input type="date" id="renewal_deadline" name="renewal_deadline"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-navy focus:ring-1 focus:ring-navy">
+                </div>
+                <button type="submit"
+                        class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                    Trigger New School Year
+                </button>
+            </form>
+
+            <form method="POST" action="{% url 'organizations:admin_close_renewal' %}"
+                  class="p-6 bg-white border border-gray-200 rounded-xl">
+                {% csrf_token %}
+                <h3 class="font-semibold text-gray-900 mb-3">Close Renewal Period</h3>
+                <p class="text-sm text-gray-500 mb-4">Lapse organizations that did not submit renewal applications</p>
+                <button type="submit"
+                        onclick="return confirm('This will lapse all organizations with renewal_due status that have no approved renewal application. Continue?')"
+                        class="w-full px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors">
+                    Close Renewal Period
+                </button>
+            </form>
+        </div>
+    </div>
+
+    {# ── Organization Management ────────────────────────────────────────────────── #}
+    <div class="mb-8">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">Organization Management</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <a href="{% url 'organizations:admin_organizations' %}"
+               class="p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg transition-all hover:border-navy">
+                <div class="flex items-start justify-between mb-2">
+                    <h3 class="font-semibold text-gray-900">Manage Organizations</h3>
+                    <svg class="w-5 h-5 text-navy" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+                    </svg>
+                </div>
+                <p class="text-sm text-gray-500">View and manage all organizations</p>
+            </a>
+
+            <a href="{% url 'organizations:admin_org_registration_panel' %}"
+               class="p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg transition-all hover:border-navy">
+                <div class="flex items-start justify-between mb-2">
+                    <h3 class="font-semibold text-gray-900">Registration Claims</h3>
+                    <svg class="w-5 h-5 text-navy" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                </div>
+                <p class="text-sm text-gray-500">Review organization registration submissions</p>
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="fixed top-4 right-4 z-50 space-y-2">
+        {% for message in messages %}
+        <div class="px-4 py-3 rounded-lg text-sm font-medium max-w-sm
+                    {% if message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200
+                    {% elif message.tags == 'warning' %}bg-yellow-50 text-yellow-700 border border-yellow-200
+                    {% else %}bg-green-50 text-green-700 border border-green-200{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

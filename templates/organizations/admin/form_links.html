@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Official Form Links — UB-CSO{% endblock %}
+{% block breadcrumb %}Official Form Links{% endblock %}
+{% block mobile_title %}Form Links{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex items-center justify-between gap-4 flex-wrap">
+    <div>
+        <h1 class="text-xl font-semibold text-gray-900">Official Form Links</h1>
+        <p class="text-gray-400 text-sm mt-1">Manage downloadable form links shown on accreditation application pages</p>
+    </div>
+    <a href="{% url 'core:admin_panel' %}"
+       class="text-sm text-gray-500 hover:text-navy transition-colors">← Back to Admin Panel</a>
+</div>
+
+{% if messages %}
+<div class="mb-4 space-y-2">
+    {% for message in messages %}
+    <div class="px-4 py-3 rounded-lg text-sm
+                {% if message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200
+                {% else %}bg-green-50 text-green-700 border border-green-200{% endif %}">
+        {{ message }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Existing links -->
+<div class="bg-white rounded-2xl border border-gray-200 overflow-hidden mb-6">
+    <div class="px-6 py-4 border-b border-gray-100">
+        <h2 class="text-sm font-semibold text-gray-900">Existing Links</h2>
+    </div>
+    {% if links %}
+    <ul class="divide-y divide-gray-100" id="links-list">
+        {% for link in links %}
+        <li class="px-6 py-4" id="link-row-{{ link.id }}">
+            <!-- View mode -->
+            <div class="flex items-start justify-between gap-4" id="view-{{ link.id }}">
+                <div class="min-w-0">
+                    <p class="text-sm font-medium text-gray-900">{{ link.label }}</p>
+                    <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer"
+                       class="text-xs text-blue-600 hover:underline break-all">{{ link.url }}</a>
+                    <p class="text-xs text-gray-400 mt-1">
+                        Last updated {{ link.updated_at|date:"M d, Y" }}
+                        {% if link.updated_by %}by {{ link.updated_by.get_full_name }}{% endif %}
+                    </p>
+                </div>
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    <button type="button"
+                            onclick="showEditForm({{ link.id }}, '{{ link.label|escapejs }}', '{{ link.url|escapejs }}')"
+                            class="px-3 py-1.5 border border-gray-200 text-gray-600 text-xs font-medium rounded-lg hover:border-navy hover:text-navy transition-colors">
+                        Edit
+                    </button>
+                    <form method="POST" action="{% url 'organizations:admin_form_link_delete' link_id=link.id %}"
+                          onsubmit="return confirm('Delete this form link?')">
+                        {% csrf_token %}
+                        <button type="submit"
+                                class="px-3 py-1.5 border border-red-200 text-red-600 text-xs font-medium rounded-lg hover:bg-red-50 transition-colors">
+                            Delete
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <!-- Edit mode (hidden by default) -->
+            <div class="hidden mt-3" id="edit-{{ link.id }}">
+                <form method="POST" action="{% url 'organizations:admin_form_links' %}" class="space-y-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="edit">
+                    <input type="hidden" name="link_id" value="{{ link.id }}">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Label</label>
+                            <input type="text" name="label" id="edit-label-{{ link.id }}"
+                                   class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy"
+                                   required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">URL</label>
+                            <input type="url" name="url" id="edit-url-{{ link.id }}"
+                                   class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy"
+                                   required>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="submit"
+                                class="px-4 py-2 bg-navy text-white text-sm font-medium rounded-lg hover:bg-opacity-90 transition-colors">
+                            Save Changes
+                        </button>
+                        <button type="button"
+                                onclick="hideEditForm({{ link.id }})"
+                                class="px-4 py-2 border border-gray-200 text-gray-600 text-sm font-medium rounded-lg hover:border-gray-400 transition-colors">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <div class="px-6 py-10 text-center">
+        <p class="text-sm text-gray-400">No form links yet. Add one below.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Add new link -->
+<div class="bg-white rounded-2xl border border-gray-200 p-6">
+    <h2 class="text-sm font-semibold text-gray-900 mb-4">Add New Form Link</h2>
+    <form method="POST" action="{% url 'organizations:admin_form_links' %}" class="space-y-4">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Label <span class="text-red-500">*</span></label>
+                <input type="text" name="label"
+                       class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy"
+                       placeholder="e.g. Constitution Template"
+                       required>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">URL <span class="text-red-500">*</span></label>
+                <input type="url" name="url"
+                       class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy"
+                       placeholder="https://drive.google.com/..."
+                       required>
+            </div>
+        </div>
+        <div>
+            <button type="submit"
+                    class="px-5 py-2 bg-navy text-white text-sm font-medium rounded-lg hover:bg-opacity-90 transition-colors">
+                Add Form Link
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+function showEditForm(id, label, url) {
+    document.getElementById('view-' + id).classList.add('hidden');
+    document.getElementById('edit-' + id).classList.remove('hidden');
+    document.getElementById('edit-label-' + id).value = label;
+    document.getElementById('edit-url-' + id).value = url;
+}
+
+function hideEditForm(id) {
+    document.getElementById('view-' + id).classList.remove('hidden');
+    document.getElementById('edit-' + id).classList.add('hidden');
+}
+</script>
+{% endblock %}

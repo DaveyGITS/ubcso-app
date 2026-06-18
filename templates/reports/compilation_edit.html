@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Compilation — {{ org.name }}{% endblock %}
+{% block breadcrumb %}{{ org.name }} / Compilations / Edit{% endblock %}
+{% block mobile_title %}Edit Compilation{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+
+    <div class="flex items-center gap-3 mb-6">
+        <a href="{% url 'reports:report_compilation_list' org.id %}" class="text-gray-400 hover:text-gray-600 transition-colors">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        </a>
+        <div>
+            <h1 class="text-xl font-semibold text-gray-900">Edit Compilation</h1>
+            <p class="text-sm text-gray-400 mt-0.5">{{ org.name }}</p>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+        <div class="mb-4 p-3 rounded-lg text-sm
+            {% if message.tags == 'error' %}bg-red-50 text-red-600 border border-red-200
+            {% else %}bg-green-50 text-green-600 border border-green-200{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="POST" class="space-y-6">
+        {% csrf_token %}
+
+        <!-- Compilation Name -->
+        <div class="bg-white rounded-2xl border border-gray-200 p-5">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Compilation Name</label>
+            <input type="text" name="compilation_name" value="{{ compilation.name }}" required
+                   placeholder="e.g. 1st Semester 2024–2025 Reports"
+                   class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-navy transition-colors">
+            <p class="text-xs text-gray-400 mt-1">Give this compilation a descriptive name.</p>
+        </div>
+
+        <!-- Reports Selection -->
+        <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+            <div class="px-5 py-4 border-b border-gray-100">
+                <h2 class="text-sm font-semibold text-gray-700">Select Reports</h2>
+                <p class="text-xs text-gray-400 mt-1">Choose which approved reports to include in this compilation.</p>
+            </div>
+
+            {% if approved_reports %}
+            <div class="divide-y divide-gray-50">
+                {% for report in approved_reports %}
+                <div class="flex items-start gap-3 px-5 py-4 hover:bg-gray-50 transition-colors">
+                    <input type="checkbox" name="report_ids" value="{{ report.id }}"
+                           {% if report in compilation.reports.all %}checked{% endif %}
+                           class="mt-1 rounded border-gray-300 text-navy focus:ring-navy flex-shrink-0">
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-semibold text-gray-900 break-words">{{ report.title }}</p>
+                        {% if report.activity_name %}
+                        <p class="text-xs text-gray-500 mt-0.5">{{ report.activity_name }}</p>
+                        {% endif %}
+                        <div class="flex flex-wrap gap-2 mt-2">
+                            {% if report.date_of_activity %}
+                            <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                                {{ report.date_of_activity|date:"M d, Y" }}
+                            </span>
+                            {% endif %}
+                            {% if report.academic_year %}
+                            <span class="text-xs bg-navy bg-opacity-10 text-navy px-2 py-0.5 rounded-full">
+                                {{ report.academic_year }}
+                            </span>
+                            {% endif %}
+                            {% if report.semester %}
+                            <span class="text-xs bg-light-blue bg-opacity-10 text-light-blue px-2 py-0.5 rounded-full">
+                                {{ report.get_semester_display }}
+                            </span>
+                            {% endif %}
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">Submitted {{ report.created_at|date:"M d, Y" }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-12 px-5">
+                <svg class="w-12 h-12 text-gray-200 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <p class="text-sm text-gray-400">No approved reports available.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-3">
+            <button type="submit"
+                    class="flex-1 bg-navy text-white py-2.5 rounded-lg text-sm font-medium hover:bg-navy-light transition-colors">
+                Save Changes
+            </button>
+            <a href="{% url 'reports:report_compilation_list' org.id %}"
+               class="flex-1 border border-gray-200 text-gray-600 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors text-center">
+                Cancel
+            </a>
+            <a href="{% url 'reports:report_compilation_delete' org.id compilation.id %}"
+               class="px-4 py-2.5 border border-red-200 text-red-500 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors whitespace-nowrap">
+                Delete
+            </a>
+        </div>
+    </form>
+
+</div>
+{% endblock %}

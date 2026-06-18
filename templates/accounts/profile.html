@@ -1,0 +1,237 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Profile — UB-CSO{% endblock %}
+{% block breadcrumb %}My Profile{% endblock %}
+{% block mobile_title %}My Profile{% endblock %}
+
+{% block extra_css %}
+<style>
+.org-row { transition: background 0.15s ease, border-color 0.15s ease; }
+.org-row:hover { background: rgba(255,255,255,0.18) !important; border-color: rgba(255,255,255,0.3) !important; }
+.avatar-btn { cursor: zoom-in; }
+#avatar-lightbox { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:9999; align-items:center; justify-content:center; }
+#avatar-lightbox.open { display:flex; }
+#avatar-lightbox img { max-width:90vw; max-height:90vh; border-radius:1rem; box-shadow:0 8px 40px rgba(0,0,0,0.5); }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Blue glow -->
+<div class="fixed top-0 left-0 pointer-events-none" style="z-index:1;width:70%;height:60%;background:radial-gradient(ellipse at 0% 0%,rgba(34,119,224,0.69) 0%,rgba(93,173,226,0.18) 30%,transparent 70%);"></div>
+
+<div class="relative flex flex-col lg:flex-row gap-6 items-start" style="z-index:2;">
+
+    <!-- ── MAIN: Profile + Account Info ── -->
+    <div class="w-full lg:flex-1 min-w-0">
+
+        <!-- Profile card -->
+        <div class="bg-white rounded-2xl border border-gray-200 mb-4 overflow-hidden">
+
+            <!-- Banner -->
+            <div class="h-28 bg-navy relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-40 h-40 bg-light-blue opacity-10 rounded-full -mr-12 -mt-12"></div>
+                <div class="absolute bottom-0 left-20 w-20 h-20 bg-orange opacity-10 rounded-full -mb-8"></div>
+            </div>
+
+            <!-- Avatar + info -->
+            <div class="px-6 pb-6">
+                <!-- On mobile: center everything. On desktop: avatar left, edit button right -->
+                <div class="flex flex-col items-center md:flex-row md:items-end md:justify-between -mt-14 mb-4 relative z-10">
+
+                    <!-- Avatar — bigger, centered on mobile -->
+                    <div class="relative flex-shrink-0">
+                        {% if user.profile_picture %}
+                        <img src="{{ user.profile_picture.url }}" alt="Profile"
+                             onclick="document.getElementById('avatar-lightbox').classList.add('open')"
+                             class="avatar-btn w-28 h-28 rounded-full object-cover ring-4 ring-white shadow-md">
+                        {% else %}
+                        <div class="w-28 h-28 rounded-full bg-navy flex items-center justify-center ring-4 ring-white shadow-md">
+                            <span class="text-white text-3xl font-semibold">
+                                {{ user.first_name|first }}{{ user.last_name|first }}
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Edit button — below avatar on mobile, right-aligned on desktop -->
+                    <a href="{% url 'accounts:edit_profile' %}"
+                       class="mt-3 md:mt-0 flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                        Edit profile
+                    </a>
+                </div>
+
+                <!-- Name & details — centered on mobile -->
+                <div class="text-center md:text-left">
+                    <h1 class="text-xl font-semibold text-gray-900">{{ user.get_full_name }}</h1>
+                    <p class="text-gray-400 text-sm mt-0.5">{% if user.is_faculty %}{{ user.employee_id }}{% else %}{{ user.student_id }}{% endif %}</p>
+
+                    <div class="flex flex-wrap justify-center md:justify-start gap-2 mt-3">
+                        {% if user.is_faculty %}
+                        <span class="text-xs bg-navy text-white px-3 py-1 rounded-full font-medium">Faculty</span>
+                        {% if user.department %}
+                        <span class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full">{{ user.department }}</span>
+                        {% endif %}
+                        {% else %}
+                        {% if user.course %}
+                        <span class="text-xs bg-navy bg-opacity-10 text-navy px-3 py-1 rounded-full">{{ user.course.abbreviation }}</span>
+                        {% endif %}
+                        <span class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full">Year {{ user.year_level }}</span>
+                        {% endif %}
+                        {% if user.is_cso_president %}
+                        <span class="text-xs bg-orange bg-opacity-10 text-orange px-3 py-1 rounded-full font-medium">CSO President</span>
+                        {% elif user.is_cso_admin %}
+                        <span class="text-xs bg-orange bg-opacity-10 text-orange px-3 py-1 rounded-full">CSO Admin</span>
+                        {% endif %}
+                    </div>
+
+                    {% if user.bio %}
+                    <p class="text-gray-600 text-sm mt-4 leading-relaxed">{{ user.bio }}</p>
+                    {% else %}
+                    <p class="text-gray-300 text-sm mt-4 italic">No bio yet. Edit your profile to add one.</p>
+                    {% endif %}
+
+                    {% if user.contact_number %}
+                    <div class="flex items-center justify-center md:justify-start gap-2 mt-3 text-sm text-gray-500">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                        </svg>
+                        {{ user.contact_number }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Account information -->
+        <div class="bg-white rounded-2xl border border-gray-200 p-6">
+            <h2 class="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wider">Account Information</h2>
+            <div class="space-y-3">
+                <div class="flex items-center justify-between py-2 border-b border-gray-50">
+                    <span class="text-sm text-gray-500">Email</span>
+                    <span class="text-sm text-gray-900">{{ user.email }}</span>
+                </div>
+                {% if user.is_faculty %}
+                <div class="flex items-center justify-between py-2 border-b border-gray-50">
+                    <span class="text-sm text-gray-500">Employee ID</span>
+                    <span class="text-sm text-gray-900 font-mono">{{ user.employee_id }}</span>
+                </div>
+                <div class="flex items-center justify-between py-2 border-b border-gray-50">
+                    <span class="text-sm text-gray-500">Department</span>
+                    <span class="text-sm text-gray-900">{{ user.department|default:"Not set" }}</span>
+                </div>
+                {% else %}
+                <div class="flex items-center justify-between py-2 border-b border-gray-50">
+                    <span class="text-sm text-gray-500">Student ID</span>
+                    <span class="text-sm text-gray-900 font-mono">{{ user.student_id }}</span>
+                </div>
+                <div class="flex items-center justify-between py-2 border-b border-gray-50">
+                    <span class="text-sm text-gray-500">Course</span>
+                    <span class="text-sm text-gray-900">{{ user.course.name|default:"Not set" }}</span>
+                </div>
+                <div class="flex items-center justify-between py-2 border-b border-gray-50">
+                    <span class="text-sm text-gray-500">Year level</span>
+                    <span class="text-sm text-gray-900">Year {{ user.year_level }}</span>
+                </div>
+                {% endif %}
+                <div class="flex items-center justify-between py-2">
+                    <span class="text-sm text-gray-500">Member since</span>
+                    <span class="text-sm text-gray-900">{{ user.date_joined|date:"F d, Y" }}</span>
+                </div>
+            </div>
+            {% if not user.is_faculty %}
+            <p class="text-xs text-gray-300 mt-4">To correct your name, student ID, or course — submit a correction request to the CSO admin.</p>
+            {% endif %}
+        </div>
+
+    </div><!-- end main -->
+
+    <!-- ── SUB: Organizations — navy monochromatic ── -->
+    <div class="w-full lg:w-72 flex-shrink-0">
+
+        <div class="rounded-2xl overflow-hidden" style="background:#1B2A7B;border:2px solid #111D5E;">
+
+            <!-- Header -->
+            <div class="px-5 py-4" style="border-bottom:1.5px solid rgba(255,255,255,0.12);">
+                <div class="flex items-center gap-2.5 mb-0.5">
+                    <svg class="w-5 h-5 text-white flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    <h2 class="text-sm font-bold text-white" style="letter-spacing:0.02em;">Organizations</h2>
+                </div>
+                <p class="text-xs text-white" style="opacity:0.5;margin-left:1.875rem;">Your active memberships</p>
+            </div>
+
+            <!-- Org list -->
+            <div class="p-4 space-y-2">
+                {% if memberships %}
+                {% for membership in memberships %}
+                {% if membership.role == 'chairman' or membership.role == 'co_chairman' or membership.has_chairman_privileges %}
+                <a href="{% url 'organizations:chairman_dashboard' membership.organization.id %}"
+                {% else %}
+                <a href="{% url 'organizations:org_profile' membership.organization.id %}"
+                {% endif %}
+                   class="org-row flex items-center gap-3 p-3 rounded-xl" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);">
+                    {% if membership.organization.logo %}
+                    <img src="{{ membership.organization.logo.url }}" alt="Org logo"
+                         class="w-10 h-10 rounded-full object-cover flex-shrink-0">
+                    {% else %}
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                         style="background:rgba(255,255,255,0.15);">
+                        <span class="text-white text-xs font-bold">{{ membership.organization.name|slice:":2"|upper }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-white truncate">{{ membership.organization.name }}</p>
+                        <p class="text-xs" style="color:rgba(255,255,255,0.55);">
+                            {% if membership.custom_role %}{{ membership.custom_role.name }}
+                            {% elif membership.organization.is_cso and membership.role == 'chairman' %}President
+                            {% else %}{{ membership.get_role_display }}{% endif %}
+                        </p>
+                    </div>
+                    {% if membership.role == 'chairman' or membership.role == 'co_chairman' or membership.has_chairman_privileges %}
+                    <svg class="w-3.5 h-3.5 flex-shrink-0" style="color:rgba(255,255,255,0.4);" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                    {% endif %}
+                </a>
+                {% endfor %}
+                {% else %}
+                <div class="text-center py-8">
+                    <svg class="w-10 h-10 mx-auto mb-3" style="color:rgba(255,255,255,0.2);" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    <p class="text-sm text-white" style="opacity:0.5;">No organizations yet.</p>
+                    <a href="{% url 'organizations:directory' %}"
+                       class="text-xs font-medium mt-2 inline-block" style="color:#5DADE2;">Browse directory →</a>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Footer link -->
+            <div class="px-5 py-3" style="border-top:1.5px solid rgba(255,255,255,0.1);">
+                <a href="{% url 'memberships:my_requests' %}"
+                   class="text-xs font-medium flex items-center gap-1.5" style="color:rgba(255,255,255,0.6);">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                    View all my requests →
+                </a>
+            </div>
+
+        </div>
+    </div><!-- end sub -->
+
+</div>
+
+{% if user.profile_picture %}
+<!-- Avatar lightbox -->
+<div id="avatar-lightbox" onclick="this.classList.remove('open')">
+    <img src="{{ user.profile_picture.url }}" alt="Profile picture">
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,358 @@
+{% extends 'base.html' %}
+{% block title %}Elections — UB-CSO{% endblock %}
+{% block breadcrumb %}Elections{% endblock %}
+{% block mobile_title %}Elections{% endblock %}
+
+{% block content %}
+<!-- Blue glow — fixed to viewport, originates from top-left corner -->
+<div class="fixed top-0 left-0 pointer-events-none" style="
+    z-index: 1;
+    width: 70%;
+    height: 60%;
+    background: radial-gradient(ellipse at 0% 0%, rgba(34, 119, 224, 0.69) 0%, rgba(93,173,226,0.18) 30%, transparent 70%);
+"></div>
+
+<div class="relative" style="z-index: 2;">
+<div class="max-w-4xl mx-auto">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-xl font-bold text-navy">Elections</h1>
+      <p class="text-sm text-gray-500 mt-0.5">Manage and participate in org elections</p>
+    </div>
+    {% if can_create %}
+    <a href="{% url 'elections:election_create' %}"
+       class="bg-navy text-white text-sm px-4 py-2 rounded-lg hover:bg-navy-light transition-colors">
+      + New Election
+    </a>
+    {% endif %}
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="mb-4 px-4 py-3 rounded-lg text-sm
+        {% if message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200
+        {% else %}bg-green-50 text-green-700 border border-green-200{% endif %}">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Two-column layout: main content left, admin panel right -->
+  <div class="{% if is_cso_admin and oversight_elections is not None %}lg:grid lg:grid-cols-3 lg:gap-6 lg:items-start{% endif %}">
+
+  <!-- LEFT / MAIN COLUMN -->
+  <div class="{% if is_cso_admin and oversight_elections is not None %}lg:col-span-2{% endif %}">
+
+  {% if managed_elections or voter_elections %}
+  <!-- Tabs: My Elections + Manage only -->
+  <div class="flex border-b border-gray-200 mb-6 gap-1">
+    {% if voter_elections %}
+    <button onclick="showTab('vote')" id="tab-vote"
+            class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px">
+      🗳 Vote
+      <span class="ml-1.5 text-xs bg-orange text-white px-1.5 py-0.5 rounded-full">{{ voter_elections|length }}</span>
+    </button>
+    {% endif %}
+    {% if managed_elections %}
+    <button onclick="showTab('manage')" id="tab-manage"
+            class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px">
+      ⚙ Manage
+      <span class="ml-1.5 text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full">{{ managed_elections|length }}</span>
+    </button>
+    {% endif %}
+  </div>
+
+  <!-- Vote tab -->
+  {% if voter_elections %}
+  <div id="panel-vote" class="tab-panel">
+    <p class="text-xs text-gray-400 mb-3">Elections you are eligible to vote in.</p>
+    <div class="space-y-3">
+      {% for election in voter_elections %}
+
+      {% comment %}Determine if this election is open but not yet started (scheduled open){% endcomment %}
+      {% if election.status == 'open' and election.start_datetime and election.start_datetime > now %}
+
+      {# ── Upcoming / not-yet-started card ── #}
+      <div class="rounded-xl p-5 flex items-center justify-between gap-4 border-2 border-dashed"
+           style="background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%); border-color: rgba(148,163,184,0.35); min-height: 88px; box-shadow: 0 4px 16px rgba(15,23,42,0.3);">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-semibold"
+                  style="background: rgba(251,191,36,0.2); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3);">
+              <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              Upcoming
+            </span>
+          </div>
+          <p class="text-sm font-semibold text-white truncate mb-0.5">{{ election.title }}</p>
+          <p class="text-xs truncate" style="color: rgba(255,255,255,0.6);">{{ election.organization.name }}</p>
+          <p class="text-xs mt-1 font-medium" style="color: rgba(251,191,36,0.85);">
+            Opens {{ election.start_datetime|date:"M d, Y" }} at {{ election.start_datetime|date:"g:i A" }}
+          </p>
+          {% if election.end_datetime %}
+          <p class="text-xs mt-0.5" style="color: rgba(255,255,255,0.4);">
+            Closes {{ election.end_datetime|date:"M d, Y" }} at {{ election.end_datetime|date:"g:i A" }}
+          </p>
+          {% endif %}
+        </div>
+        <div class="flex-shrink-0 text-center">
+          <div class="w-10 h-10 rounded-full flex items-center justify-center mb-1"
+               style="background: rgba(251,191,36,0.15); border: 1.5px solid rgba(251,191,36,0.3);">
+            <svg class="w-5 h-5" style="color: #fbbf24;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <p class="text-xs font-medium" style="color: rgba(251,191,36,0.7);">Not open yet</p>
+        </div>
+      </div>
+
+      {% else %}
+
+      {# ── Normal open / results card ── #}
+      <div class="rounded-xl p-5 flex items-center justify-between gap-4"
+           style="background: linear-gradient(135deg, #1B2A7B 0%, #2563eb 100%); min-height: 88px; box-shadow: 0 4px 16px rgba(27,42,123,0.25);">
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-semibold text-white truncate mb-1">{{ election.title }}</p>
+          <span class="text-xs px-2 py-0.5 rounded-full font-medium inline-block mb-1
+            {% if election.status == 'open' %}bg-green-400 bg-opacity-25 text-green-100
+            {% else %}bg-white bg-opacity-20 text-white{% endif %}">
+            {{ election.get_status_display }}
+          </span>
+          <p class="text-xs truncate" style="color: rgba(255,255,255,0.7);">{{ election.organization.name }}</p>
+          {% if election.status == 'open' %}
+          <p class="text-xs mt-0.5" style="color: rgba(255,255,255,0.55);">Closes {{ election.end_datetime|date:"M d, Y g:i A" }}</p>
+          {% endif %}
+        </div>
+        <div class="flex-shrink-0">
+          {% if election.status == 'open' %}
+            <a href="{% url 'elections:election_vote' election.id %}"
+               class="text-xs bg-orange text-white px-3 py-1.5 rounded-lg hover:bg-orange-light transition-colors font-medium">
+              Vote Now
+            </a>
+          {% else %}
+            <a href="{% url 'elections:election_results' election.id %}"
+               class="text-xs px-3 py-1.5 rounded-lg transition-colors font-medium"
+               style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.35);">
+              View Results
+            </a>
+          {% endif %}
+        </div>
+      </div>
+
+      {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Manage tab -->
+  {% if managed_elections %}
+  <div id="panel-manage" class="tab-panel hidden">
+    <p class="text-xs text-gray-400 mb-3">Elections you created or are managing for your organization.</p>
+    <div class="space-y-3">
+      {% for election in managed_elections %}
+
+      {% if election.status == 'draft' and election.start_datetime %}
+
+      {# ── Scheduled / upcoming card for manager ── #}
+      <div class="rounded-xl p-5 flex items-center justify-between gap-4 border-2 border-dashed"
+           style="background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%); border-color: rgba(148,163,184,0.35); min-height: 88px; box-shadow: 0 4px 16px rgba(15,23,42,0.3);">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-semibold"
+                  style="background: rgba(251,191,36,0.2); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3);">
+              <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              Scheduled
+            </span>
+          </div>
+          <p class="text-sm font-semibold text-white truncate mb-0.5">{{ election.title }}</p>
+          <p class="text-xs truncate" style="color: rgba(255,255,255,0.6);">{{ election.organization.name }}</p>
+          <p class="text-xs mt-1 font-medium" style="color: rgba(251,191,36,0.85);">
+            Opens {{ election.start_datetime|date:"M d, Y" }} at {{ election.start_datetime|date:"g:i A" }}
+          </p>
+          {% if election.end_datetime %}
+          <p class="text-xs mt-0.5" style="color: rgba(255,255,255,0.4);">
+            Closes {{ election.end_datetime|date:"M d, Y" }} at {{ election.end_datetime|date:"g:i A" }}
+          </p>
+          {% endif %}
+        </div>
+        <div class="flex-shrink-0">
+          <a href="{% url 'elections:election_manage' election.id %}"
+             class="text-xs px-3 py-1.5 rounded-lg transition-colors font-medium"
+             style="background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.35);">
+            Manage
+          </a>
+        </div>
+      </div>
+
+      {% else %}
+
+      {# ── Normal manage card ── #}
+      <div class="rounded-xl p-5 flex items-center justify-between gap-4"
+           style="background: linear-gradient(135deg, #1B2A7B 0%, #2563eb 100%); min-height: 88px; box-shadow: 0 4px 16px rgba(27,42,123,0.25);">
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-semibold text-white truncate mb-1">{{ election.title }}</p>
+          <span class="text-xs px-2 py-0.5 rounded-full font-medium inline-block mb-1
+            {% if election.status == 'draft' %}bg-white bg-opacity-20 text-white
+            {% elif election.status == 'open' %}bg-green-400 bg-opacity-25 text-green-100
+            {% elif election.status == 'closed' %}bg-yellow-300 bg-opacity-25 text-yellow-100
+            {% else %}bg-white bg-opacity-20 text-white{% endif %}">
+            {{ election.get_status_display }}
+          </span>
+          <p class="text-xs truncate" style="color: rgba(255,255,255,0.7);">{{ election.organization.name }}</p>
+          <p class="text-xs mt-0.5" style="color: rgba(255,255,255,0.55);">
+            {% if election.start_datetime and election.end_datetime %}{{ election.start_datetime|date:"M d, Y" }} — {{ election.end_datetime|date:"M d, Y" }}
+            {% elif election.academic_period %}{{ election.academic_period.name }}
+            {% else %}Draft — not yet opened{% endif %}
+          </p>
+        </div>
+        <div class="flex gap-2 flex-shrink-0">
+          {% if election.status == 'results_released' %}
+            <a href="{% url 'elections:election_results' election.id %}?view=manage"
+               class="text-xs px-3 py-1.5 rounded-lg transition-colors font-medium"
+               style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.35);">
+              Results
+            </a>
+          {% else %}
+            <a href="{% url 'elections:election_manage' election.id %}"
+               class="text-xs bg-orange text-white px-3 py-1.5 rounded-lg hover:bg-orange-light transition-colors font-medium">
+              Manage
+            </a>
+          {% endif %}
+        </div>
+      </div>
+
+      {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="bg-white rounded-xl border border-gray-200 p-12 text-center">
+    <svg class="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+    </svg>
+    <p class="text-gray-500 text-sm">No elections yet.</p>
+  </div>
+  {% endif %}
+
+  </div><!-- end left column -->
+
+  <!-- RIGHT COLUMN — CSO Admin Oversight Panel -->
+  {% if is_cso_admin and oversight_elections is not None %}
+  <div class="lg:col-span-1 mt-6 lg:mt-0">
+    <div class="sticky top-4">
+
+      <!-- Admin panel header -->
+      <div class="bg-navy rounded-t-2xl px-4 pt-4 pb-3 flex items-center justify-between">
+        <div>
+          <h2 class="text-sm font-semibold text-white">All Org Elections</h2>
+          <div class="flex items-center gap-2 mt-0.5">
+            <svg class="w-3 h-3 text-white opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+            </svg>
+            <span class="text-[10px] font-bold text-white uppercase tracking-widest opacity-60">Admin View</span>
+          </div>
+        </div>
+        <span class="text-xs bg-light-blue text-white px-2 py-0.5 rounded-full font-medium">
+          {{ oversight_elections|length }}
+        </span>
+      </div>
+
+      <!-- Subheader note -->
+      <div class="bg-navy bg-opacity-90 px-4 py-2 border-t border-white border-opacity-10">
+        <p class="text-xs text-white opacity-60">Read-only · visible to CSO admins only</p>
+      </div>
+
+      <!-- Election list -->
+      <div class="bg-white border border-navy border-opacity-20 rounded-b-2xl overflow-hidden">
+        {% if oversight_elections %}
+        <div class="divide-y divide-gray-100 overflow-y-auto" style="max-height: 420px;">
+          {% for election in oversight_elections %}
+          <div class="px-4 py-3 flex items-center justify-between gap-3 hover:bg-gray-50 transition-colors">
+            <div class="flex-1 min-w-0">
+              <span class="text-xs font-semibold text-gray-800 truncate block mb-0.5">{{ election.title }}</span>
+              <p class="text-xs text-gray-500 truncate">{{ election.organization.name }}</p>
+              <div class="flex items-center gap-2 mt-0.5">
+                <span class="text-xs px-1.5 py-0.5 rounded font-medium
+                  {% if election.status == 'draft' and election.start_datetime %}bg-yellow-100 text-yellow-700
+                  {% elif election.status == 'draft' %}bg-gray-100 text-gray-500
+                  {% elif election.status == 'open' %}bg-green-100 text-green-700
+                  {% elif election.status == 'closed' %}bg-yellow-100 text-yellow-700
+                  {% else %}bg-blue-100 text-blue-700{% endif %}">
+                  {% if election.status == 'draft' and election.start_datetime %}Scheduled{% else %}{{ election.get_status_display }}{% endif %}
+                </span>
+                {% if election.status == 'draft' and election.start_datetime %}
+                <span class="text-xs text-yellow-600 font-medium">{{ election.start_datetime|date:"M d, g:i A" }}</span>
+                {% elif election.start_datetime and election.end_datetime %}
+                <span class="text-xs text-gray-400">{{ election.end_datetime|date:"M d" }}</span>
+                {% endif %}
+              </div>
+            </div>
+            <div class="flex-shrink-0">
+              {% if election.status == 'results_released' %}
+                <a href="{% url 'elections:election_results' election.id %}"
+                   class="text-xs bg-navy text-white px-2.5 py-1 rounded-lg hover:bg-opacity-80 transition-colors font-medium">
+                  Results
+                </a>
+              {% elif election.status == 'open' or election.status == 'closed' %}
+                <a href="{% url 'elections:election_results' election.id %}"
+                   class="text-xs border border-gray-300 text-gray-600 px-2.5 py-1 rounded-lg hover:bg-navy hover:text-white hover:border-navy transition-colors">
+                  View
+                </a>
+              {% else %}
+                <span class="text-xs text-gray-300">Draft</span>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="px-4 py-8 text-center">
+          <p class="text-sm text-gray-400">No elections from other organizations.</p>
+        </div>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+  {% endif %}
+
+  </div><!-- end two-column grid -->
+
+</div><!-- end max-w-4xl -->
+</div><!-- end relative z-2 -->
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function showTab(name) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      b.classList.remove('border-navy', 'text-navy');
+      b.classList.add('border-transparent', 'text-gray-500');
+    });
+    const panel = document.getElementById('panel-' + name);
+    const btn = document.getElementById('tab-' + name);
+    if (panel) panel.classList.remove('hidden');
+    if (btn) {
+      btn.classList.remove('border-transparent', 'text-gray-500');
+      btn.classList.add('border-navy', 'text-navy');
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const firstBtn = document.querySelector('.tab-btn');
+    if (firstBtn) {
+      const name = firstBtn.id.replace('tab-', '');
+      showTab(name);
+    }
+  });
+</script>
+{% endblock %}

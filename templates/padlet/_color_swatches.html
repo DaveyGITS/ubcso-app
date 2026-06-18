@@ -1,0 +1,180 @@
+{% comment %}
+  Color swatch picker partial.
+  Usage: {% include 'padlet/_color_swatches.html' with selected_color=board.board_color %}
+  Renders organized color swatches grouped by color family.
+{% endcomment %}
+<style>
+.color-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.75rem;
+}
+.color-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+.color-group-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.15rem;
+}
+.color-swatch {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    border: 2px solid transparent;
+    flex-shrink: 0;
+}
+.color-swatch:hover { 
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.color-swatch.selected {
+    border-color: #1f2937;
+    box-shadow: 0 0 0 3px rgba(31, 41, 55, 0.1);
+    transform: scale(1.05);
+}
+.color-swatch.selected::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+.color-row {
+    display: flex;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+}
+</style>
+
+<div class="color-picker-grid">
+    <!-- Blues -->
+    <div class="color-group">
+        <div class="color-group-label">Blues</div>
+        <div class="color-row">
+            <div class="color-swatch {% if selected_color == 'blue-slate' %}selected{% endif %}"
+                 data-color="blue-slate"
+                 style="background: linear-gradient(145deg, #4a6fa5, #2d4a7a);"
+                 title="Slate Blue"></div>
+            <div class="color-swatch {% if selected_color == 'blue-ocean' %}selected{% endif %}"
+                 data-color="blue-ocean"
+                 style="background: linear-gradient(145deg, #1e88c8, #0d5a8a);"
+                 title="Ocean Blue"></div>
+            <div class="color-swatch {% if selected_color == 'blue-denim' %}selected{% endif %}"
+                 data-color="blue-denim"
+                 style="background: linear-gradient(145deg, #3a5f8a, #1e3a5f);"
+                 title="Denim"></div>
+            <div class="color-swatch {% if selected_color == 'blue-sky' %}selected{% endif %}"
+                 data-color="blue-sky"
+                 style="background: linear-gradient(145deg, #5bb8e8, #2a8abf);"
+                 title="Sky Blue"></div>
+        </div>
+    </div>
+
+    <!-- Greens -->
+    <div class="color-group">
+        <div class="color-group-label">Greens</div>
+        <div class="color-row">
+            <div class="color-swatch {% if selected_color == 'green-sage' %}selected{% endif %}"
+                 data-color="green-sage"
+                 style="background: linear-gradient(145deg, #7aab8a, #4a7a5a);"
+                 title="Sage Green"></div>
+            <div class="color-swatch {% if selected_color == 'green-forest' %}selected{% endif %}"
+                 data-color="green-forest"
+                 style="background: linear-gradient(145deg, #3a7a4a, #1e4a2a);"
+                 title="Forest Green"></div>
+            <div class="color-swatch {% if selected_color == 'green-mint' %}selected{% endif %}"
+                 data-color="green-mint"
+                 style="background: linear-gradient(145deg, #6ecfa8, #3aaa7a);"
+                 title="Mint"></div>
+            <div class="color-swatch {% if selected_color == 'green-olive' %}selected{% endif %}"
+                 data-color="green-olive"
+                 style="background: linear-gradient(145deg, #8a9a4a, #5a6a2a);"
+                 title="Olive"></div>
+        </div>
+    </div>
+
+    <!-- Purples -->
+    <div class="color-group">
+        <div class="color-group-label">Purples</div>
+        <div class="color-row">
+            <div class="color-swatch {% if selected_color == 'purple-grape' %}selected{% endif %}"
+                 data-color="purple-grape"
+                 style="background: linear-gradient(145deg, #7a4a9a, #4a2a6a);"
+                 title="Grape"></div>
+            <div class="color-swatch {% if selected_color == 'purple-lavender' %}selected{% endif %}"
+                 data-color="purple-lavender"
+                 style="background: linear-gradient(145deg, #a07ac8, #6a4a9a);"
+                 title="Lavender"></div>
+            <div class="color-swatch {% if selected_color == 'purple-plum' %}selected{% endif %}"
+                 data-color="purple-plum"
+                 style="background: linear-gradient(145deg, #6a3a7a, #3a1a4a);"
+                 title="Plum"></div>
+        </div>
+    </div>
+
+    <!-- Reds / Pinks -->
+    <div class="color-group">
+        <div class="color-group-label">Reds</div>
+        <div class="color-row">
+            <div class="color-swatch {% if selected_color == 'red-rose' %}selected{% endif %}"
+                 data-color="red-rose"
+                 style="background: linear-gradient(145deg, #c85a7a, #8a2a4a);"
+                 title="Rose"></div>
+            <div class="color-swatch {% if selected_color == 'red-crimson' %}selected{% endif %}"
+                 data-color="red-crimson"
+                 style="background: linear-gradient(145deg, #c0392b, #7a1a10);"
+                 title="Crimson"></div>
+            <div class="color-swatch {% if selected_color == 'pink-blush' %}selected{% endif %}"
+                 data-color="pink-blush"
+                 style="background: linear-gradient(145deg, #e8a0b8, #c06080);"
+                 title="Blush"></div>
+        </div>
+    </div>
+
+    <!-- Warm Neutrals -->
+    <div class="color-group">
+        <div class="color-group-label">Warm</div>
+        <div class="color-row">
+            <div class="color-swatch {% if selected_color == 'warm-sand' %}selected{% endif %}"
+                 data-color="warm-sand"
+                 style="background: linear-gradient(145deg, #c8a87a, #8a6a3a);"
+                 title="Sand"></div>
+            <div class="color-swatch {% if selected_color == 'warm-terracotta' %}selected{% endif %}"
+                 data-color="warm-terracotta"
+                 style="background: linear-gradient(145deg, #c87a5a, #8a4a2a);"
+                 title="Terracotta"></div>
+            <div class="color-swatch {% if selected_color == 'warm-caramel' %}selected{% endif %}"
+                 data-color="warm-caramel"
+                 style="background: linear-gradient(145deg, #c89a5a, #8a5a1a);"
+                 title="Caramel"></div>
+        </div>
+    </div>
+
+    <!-- Dark -->
+    <div class="color-group">
+        <div class="color-group-label">Dark</div>
+        <div class="color-row">
+            <div class="color-swatch {% if selected_color == 'dark-charcoal' %}selected{% endif %}"
+                 data-color="dark-charcoal"
+                 style="background: linear-gradient(145deg, #4a4a5a, #1a1a2a);"
+                 title="Charcoal"></div>
+            <div class="color-swatch {% if selected_color == 'dark-midnight' %}selected{% endif %}"
+                 data-color="dark-midnight"
+                 style="background: linear-gradient(145deg, #1a2a4a, #0a0a1a);"
+                 title="Midnight"></div>
+        </div>
+    </div>
+</div>

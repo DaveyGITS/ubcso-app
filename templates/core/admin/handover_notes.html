@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}Handover Notes — UB-CSO{% endblock %}
+{% block breadcrumb %}Admin Panel / Handover Notes{% endblock %}
+{% block mobile_title %}Handover Notes{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+
+  <div class="mb-6">
+    <a href="{% url 'core:admin_panel' %}" class="text-sm text-gray-500 hover:text-navy transition-colors">← Admin Panel</a>
+    <h1 class="text-xl font-bold text-navy mt-1">Handover Notes History</h1>
+    <p class="text-sm text-gray-500 mt-0.5">All chairman and presidency handover notes.</p>
+  </div>
+
+  {% if notes %}
+  <div class="space-y-3">
+    {% for note in notes %}
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <div class="flex items-start justify-between gap-3 mb-3">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs px-2 py-0.5 rounded-full font-medium
+              {% if note.type == 'cso_president' %}bg-navy bg-opacity-10 text-navy
+              {% else %}bg-light-blue-soft text-navy{% endif %}">
+              {% if note.type == 'cso_president' %}Presidency{% else %}Chairman{% endif %}
+            </span>
+            {% if note.organization %}
+            <span class="text-xs text-gray-500">{{ note.organization.name }}</span>
+            {% endif %}
+          </div>
+          <p class="text-xs text-gray-400 mt-1">{{ note.created_at|date:"M d, Y g:i A" }}</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 text-xs text-gray-500 mb-3">
+        <span class="font-medium text-gray-700">{{ note.from_user.get_full_name|default:"—" }}</span>
+        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+        <span class="font-medium text-gray-700">{{ note.to_user.get_full_name|default:"—" }}</span>
+      </div>
+      <p class="text-sm text-gray-700 whitespace-pre-line">{{ note.note }}</p>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="bg-white rounded-xl border border-gray-200 p-12 text-center">
+    <p class="text-gray-400 text-sm">No handover notes yet.</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

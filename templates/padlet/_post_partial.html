@@ -1,0 +1,169 @@
+{% with color=post.color %}
+<div id="post-{{ post.id }}"
+     data-post-id="{{ post.id }}"
+     data-pos-x="{{ post.pos_x|default:5 }}"
+     data-pos-y="{{ post.pos_y|default:5 }}"
+     data-content="{{ post.content|escape }}"
+     data-author-name="{% if post.is_anonymous %}Anonymous{% elif post.author %}{{ post.author.get_full_name|escapejs }}{% else %}Deleted{% endif %}"
+     data-author-pic="{% if not post.is_anonymous and post.author and post.author.profile_picture %}{{ post.author.profile_picture.url }}{% endif %}"
+     data-author-initials="{% if not post.is_anonymous and post.author %}{{ post.author.first_name|first }}{{ post.author.last_name|first }}{% endif %}"
+     data-date="{{ post.created_at|date:'M d, Y' }}"
+     data-approve="{{ post.approve_count }}"
+     data-disapprove="{{ post.disapprove_count }}"
+     data-replies="{{ post.replies.count }}"
+     data-is-pinned="{{ post.is_pinned|yesno:'true,false' }}"
+     data-can-manage="{% if is_manager %}true{% else %}false{% endif %}"
+     data-can-edit="{% if post.author == request.user %}true{% else %}false{% endif %}"
+     class="note-card flex flex-col
+            {% if post.is_pinned %}note-pinned{% endif %}
+            {% if color == 'yellow' %}note-yellow
+            {% elif color == 'blue' %}note-blue
+            {% elif color == 'green' %}note-green
+            {% elif color == 'pink' %}note-pink
+            {% elif color == 'purple' %}note-purple
+            {% else %}note-yellow{% endif %}"
+     style="left: {{ post.pos_x|default:5 }}%; top: {{ post.pos_y|default:5 }}%; z-index: {{ post.z_index|default:1 }};">
+
+    <!-- Main content — LARGEST (2em) -->
+    <div id="post-view-{{ post.id }}" class="overflow-hidden">
+        {% with attachments=post.attachments.all %}
+        <p class="note-content break-words" style="display: -webkit-box; -webkit-line-clamp: {% if attachments %}1{% else %}2{% endif %}; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word;">{{ post.content }}</p>
+        {% endwith %}
+    </div>
+
+    <!-- Mini attachment previews (below content, above footer) -->
+    {% with attachments=post.attachments.all %}
+    {% if attachments %}
+    <div class="flex gap-0.5 mt-1 flex-wrap">
+        {% for attachment in attachments %}
+            {% if attachment.attachment_type == 'image' %}
+                <div class="attachment-mini-preview" data-type="image" data-att-id="{{ attachment.id }}" data-url="{{ attachment.file.url }}" style="border-radius: 2px; overflow: hidden; border: 1px solid rgba(0,0,0,0.15);">
+                    <img src="{{ attachment.file.url }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+                </div>
+            {% elif attachment.attachment_type == 'file' %}
+                <div class="attachment-mini-preview" data-type="file" data-att-id="{{ attachment.id }}" data-url="{{ attachment.file.url }}" data-name="{{ attachment.original_filename|default:'File' }}" style="border-radius: 2px; background: rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(0,0,0,0.15);">
+                    <svg class="attachment-mini-preview svg text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </div>
+            {% elif attachment.attachment_type == 'url' %}
+                <div class="attachment-mini-preview" data-type="url" data-att-id="{{ attachment.id }}" data-url="{{ attachment.url }}" style="border-radius: 2px; background: rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(0,0,0,0.15);">
+                    <svg class="attachment-mini-preview svg text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                    </svg>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <!-- Footer: author + stats — pinned to bottom -->
+    <div class="flex flex-col absolute bottom-0 left-0 right-0 pt-1 border-t border-black border-opacity-10" style="gap: 0.15em; padding: 0.4vw !important;">
+
+        <!-- Author row — MEDIUM (1.3em) -->
+        <div class="note-author flex items-center" style="gap: 0.3em;">
+            {% if post.is_anonymous %}
+                <div class="note-avatar rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
+                    <svg class="note-avatar-icon text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                </div>
+                <span class="text-gray-600 truncate flex-1 font-medium">Anonymous</span>
+            {% elif post.author %}
+                {% if post.author.profile_picture %}
+                    <img src="{{ post.author.profile_picture.url }}" alt="" class="note-avatar rounded-full object-cover flex-shrink-0">
+                {% else %}
+                    <div class="note-avatar rounded-full bg-navy flex items-center justify-center flex-shrink-0">
+                        <span class="text-white font-semibold">{{ post.author.first_name|first }}{{ post.author.last_name|first }}</span>
+                    </div>
+                {% endif %}
+                <span class="text-gray-700 font-semibold truncate flex-1">{{ post.author.get_full_name|truncatechars:15 }}</span>
+            {% else %}
+                <span class="text-gray-400 font-medium">Deleted</span>
+            {% endif %}
+        </div>
+
+        <!-- Stats + expand button row -->
+        <div class="flex items-center justify-between" style="gap: 0.3em;">
+            <div class="note-stats flex items-center text-gray-500" style="gap: 0.3em; flex-wrap: wrap;">
+                <span>{{ post.created_at|date:"M d" }}</span>
+                <span>·</span>
+                <span>{{ post.approve_count|add:post.disapprove_count }} reactions</span>
+                <span>·</span>
+                <span>{{ post.replies.count }} comments</span>
+            </div>
+            <!-- Expand button — only visible when board is zoomed in -->
+            <button class="note-expand-btn board-zoomed-only"
+                    data-post-id="{{ post.id }}"
+                    title="View full note"
+                    style="flex-shrink:0; background: rgba(0,0,0,0.12); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 1.6em; height: 1.6em; transition: background 0.15s; touch-action: auto; pointer-events: auto;"
+                    onmouseup="event.stopPropagation(); openNoteDetail({{ post.id }});"
+                    ontouchend="event.stopPropagation(); event.preventDefault(); openNoteDetail({{ post.id }});">
+                <svg style="width:0.9em;height:0.9em;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Hidden edit form (shown when editing) -->
+    <div id="post-edit-form-{{ post.id }}" class="hidden absolute inset-0 bg-white bg-opacity-95 p-2 flex flex-col" style="z-index: 10;">
+        <form hx-post="{% url 'padlet:padlet_edit_post' post.id %}"
+              hx-target="#post-{{ post.id }}"
+              hx-swap="outerHTML"
+              class="flex flex-col gap-1 h-full">
+            {% csrf_token %}
+            <textarea name="content" rows="5" required
+                      class="w-full border border-gray-300 rounded px-2 py-1 bg-white focus:outline-none focus:border-navy resize-none flex-1" style="font-size: 0.9em;">{{ post.content }}</textarea>
+            <div class="flex gap-1 items-center">
+                <span class="text-gray-600 font-medium" style="font-size: 0.8em;">Color:</span>
+                {% for color_key, color_label in color_choices %}
+                <label class="cursor-pointer" title="{{ color_label }}">
+                    <input type="radio" name="color" value="{{ color_key }}"
+                           {% if post.color == color_key %}checked{% endif %}
+                           class="sr-only peer">
+                    <div style="width: 1em; height: 1em;" class="rounded-full border border-transparent peer-checked:border-gray-700 peer-checked:scale-110 transition-all
+                                {% if color_key == 'yellow' %}bg-yellow-300
+                                {% elif color_key == 'blue' %}bg-blue-400
+                                {% elif color_key == 'green' %}bg-green-400
+                                {% elif color_key == 'pink' %}bg-pink-400
+                                {% elif color_key == 'purple' %}bg-purple-400
+                                {% endif %}"></div>
+                </label>
+                {% endfor %}
+            </div>
+            <div class="flex gap-1">
+                <button type="submit" class="bg-navy text-white px-2 py-1 rounded hover:bg-opacity-90 transition-colors font-medium" style="font-size: 0.8em;">Save</button>
+                <button type="button"
+                        onclick="document.getElementById('post-edit-form-{{ post.id }}').classList.add('hidden');"
+                        class="text-gray-600 hover:text-gray-800 px-1 py-1" style="font-size: 0.8em;">Cancel</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Delete handler -->
+    <script>
+        function deletePost{{ post.id }}() {
+            window.showConfirm('Delete this note?', 'Delete Note').then(function(confirmed) {
+                if (confirmed) {
+                    {% if post.author == request.user %}
+                    // Own note — reload after delete so FAB switches back to (+)
+                    var CSRF = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+                    fetch('{% url "padlet:padlet_delete_post" post.id %}', {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': CSRF }
+                    }).then(function() { location.reload(); });
+                    {% else %}
+                    htmx.ajax('POST', '{% url "padlet:padlet_delete_post" post.id %}', {
+                        target: '#post-{{ post.id }}',
+                        swap: 'outerHTML',
+                        headers: {'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''}
+                    });
+                    {% endif %}
+                }
+            });
+        }
+    </script>
+</div>
+{% endwith %}

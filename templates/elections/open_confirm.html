@@ -1,0 +1,365 @@
+{% extends 'base.html' %}
+{% block title %}Open Election — {{ election.title }} — UB-CSO{% endblock %}
+{% block breadcrumb %}Elections / Open{% endblock %}
+{% block mobile_title %}Open Election{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto">
+
+  <div class="mb-6">
+    <a href="{% url 'elections:election_manage' election.id %}" class="text-sm text-gray-500 hover:text-navy transition-colors">← Back to Manage</a>
+    <h1 class="text-xl font-bold text-navy mt-1">{% if is_reschedule %}Reschedule Election{% else %}Open Election{% endif %}</h1>
+    <p class="text-sm text-gray-500 mt-0.5">{{ election.title }} · {{ election.organization.name }}</p>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="mb-4 px-4 py-3 rounded-lg text-sm
+        {% if message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200
+        {% else %}bg-green-50 text-green-700 border border-green-200{% endif %}">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="POST" action="{% url 'elections:election_open' election.id %}" id="open-form">
+    {% csrf_token %}
+    <input type="hidden" name="open_now"       id="f-open-now"  value="1">
+    <input type="hidden" name="start_datetime" id="f-start"     value="">
+    <input type="hidden" name="end_datetime"   id="f-end"       value="">
+
+    {# ── Step 1: When does it open? ── #}
+    <div class="bg-white rounded-xl border border-gray-200 p-5 mb-4">
+      <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Step 1 — Opening</p>
+
+      <div class="flex flex-col gap-2">
+        <label class="flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors
+                      border-navy bg-navy bg-opacity-5"
+               id="lbl-open-now">
+          <input type="radio" name="_open_mode" value="now" checked
+                 class="w-4 h-4 accent-navy" onchange="onOpenModeChange()">
+          <div>
+            <p class="text-sm font-semibold text-gray-800">Open immediately</p>
+            <p class="text-xs text-gray-400">Election starts as soon as you confirm</p>
+          </div>
+        </label>
+
+        <label class="flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors
+                      border-gray-200"
+               id="lbl-open-scheduled">
+          <input type="radio" name="_open_mode" value="scheduled"
+                 class="w-4 h-4 accent-navy" onchange="onOpenModeChange()">
+          <div>
+            <p class="text-sm font-semibold text-gray-800">Schedule for later</p>
+            <p class="text-xs text-gray-400">Set a future date and time to open automatically</p>
+          </div>
+        </label>
+      </div>
+
+      {# Scheduled start picker — hidden until "Schedule for later" is selected #}
+      <div id="start-picker" class="hidden mt-4">
+        <p class="text-xs font-medium text-gray-600 mb-2">Start date &amp; time</p>
+        <div class="flex gap-2">
+          <input type="date" id="start-date"
+                 class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy transition-colors">
+          <input type="time" id="start-time" value="08:00"
+                 class="w-32 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy transition-colors">
+          <button type="button" onclick="confirmStart()"
+                  class="bg-navy text-white text-sm px-4 py-2 rounded-lg hover:bg-navy-light transition-colors font-medium whitespace-nowrap">
+            Set
+          </button>
+        </div>
+        <p id="start-confirmed" class="hidden text-xs text-green-600 mt-2 font-medium"></p>
+        {% if form.start_datetime.errors %}
+          <p class="text-xs text-red-600 mt-1">{{ form.start_datetime.errors.0 }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    {# ── Step 2: When does it close? ── #}
+    <div class="bg-white rounded-xl border border-gray-200 p-5 mb-4">
+      <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
+        Step 2 — Closing <span class="text-red-400">*</span>
+      </p>
+
+      {# Duration presets #}
+      <p class="text-xs font-medium text-gray-600 mb-2">Duration presets</p>
+      <div class="grid grid-cols-4 gap-2 mb-4">
+        <button type="button" onclick="applyPreset(1)"
+                class="preset-btn border border-gray-200 rounded-lg py-2 text-xs font-medium text-gray-600 hover:border-navy hover:text-navy transition-colors">
+          1 day
+        </button>
+        <button type="button" onclick="applyPreset(3)"
+                class="preset-btn border border-gray-200 rounded-lg py-2 text-xs font-medium text-gray-600 hover:border-navy hover:text-navy transition-colors">
+          3 days
+        </button>
+        <button type="button" onclick="applyPreset(7)"
+                class="preset-btn border border-gray-200 rounded-lg py-2 text-xs font-medium text-gray-600 hover:border-navy hover:text-navy transition-colors">
+          1 week
+        </button>
+        <button type="button" onclick="showCustomClose()"
+                class="preset-btn border border-gray-200 rounded-lg py-2 text-xs font-medium text-gray-600 hover:border-navy hover:text-navy transition-colors"
+                id="btn-custom">
+          Custom
+        </button>
+      </div>
+
+      {# Custom close picker — shown when Custom is clicked or preset is active #}
+      <div id="close-picker" class="hidden">
+        <p class="text-xs font-medium text-gray-600 mb-2">Closing date &amp; time</p>
+        <div class="flex gap-2">
+          <input type="date" id="end-date"
+                 class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy transition-colors">
+          <input type="time" id="end-time" value="17:00"
+                 class="w-32 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy transition-colors">
+          <button type="button" onclick="confirmEnd()"
+                  class="bg-navy text-white text-sm px-4 py-2 rounded-lg hover:bg-navy-light transition-colors font-medium whitespace-nowrap">
+            Set
+          </button>
+        </div>
+      </div>
+
+      <p id="end-confirmed" class="hidden text-xs text-green-600 mt-3 font-medium"></p>
+      {% if form.end_datetime.errors %}
+        <p class="text-xs text-red-600 mt-1">{{ form.end_datetime.errors.0 }}</p>
+      {% endif %}
+    </div>
+
+    {# ── Summary ── #}
+    <div id="schedule-summary" class="hidden bg-blue-50 border border-blue-100 rounded-xl p-4 mb-4 text-sm text-blue-800 space-y-1">
+    </div>
+
+    <button type="button" id="confirm-btn"
+            onclick="submitForm()"
+            disabled
+            class="w-full bg-green-600 text-white py-2.5 rounded-lg text-sm font-medium
+                   hover:bg-green-700 transition-colors
+                   disabled:opacity-40 disabled:cursor-not-allowed">
+      Confirm &amp; Open Election
+    </button>
+  </form>
+
+  <div class="bg-orange bg-opacity-10 border border-orange border-opacity-20 rounded-xl p-4 mt-4">
+    <p class="text-xs text-orange font-medium mb-1">Once opened</p>
+    <ul class="text-xs text-gray-600 space-y-1">
+      <li>· Positions and candidates are locked — no changes allowed</li>
+      <li>· Voter pool is finalized at open time and notifications are sent</li>
+      <li>· You can still close the election manually before the end time</li>
+    </ul>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  // ── State ──────────────────────────────────────────────────────────────────
+  var endSet = false;
+  var startSet = true; // "now" counts as set by default
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function toLocalISO(date) {
+    // Returns "YYYY-MM-DDTHH:MM" in local time — what Django datetime-local expects
+    return date.getFullYear() + '-' +
+      pad(date.getMonth() + 1) + '-' +
+      pad(date.getDate()) + 'T' +
+      pad(date.getHours()) + ':' +
+      pad(date.getMinutes());
+  }
+
+  function formatDisplay(date) {
+    var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var h = date.getHours();
+    var ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    return days[date.getDay()] + ', ' + months[date.getMonth()] + ' ' +
+      date.getDate() + ', ' + date.getFullYear() + ' · ' +
+      h + ':' + pad(date.getMinutes()) + ' ' + ampm;
+  }
+
+  function getOpenMode() {
+    return document.querySelector('input[name="_open_mode"]:checked').value;
+  }
+
+  function getEffectiveStart() {
+    // Returns a Date representing when the election will open
+    if (getOpenMode() === 'now') return new Date();
+    var d = document.getElementById('start-date').value;
+    var t = document.getElementById('start-time').value || '08:00';
+    if (!d) return null;
+    return new Date(d + 'T' + t);
+  }
+
+  // ── Open mode toggle ───────────────────────────────────────────────────────
+  window.onOpenModeChange = function () {
+    var mode = getOpenMode();
+    var picker = document.getElementById('start-picker');
+    var lblNow = document.getElementById('lbl-open-now');
+    var lblSched = document.getElementById('lbl-open-scheduled');
+
+    if (mode === 'now') {
+      picker.classList.add('hidden');
+      lblNow.classList.add('border-navy', 'bg-navy', 'bg-opacity-5');
+      lblNow.classList.remove('border-gray-200');
+      lblSched.classList.remove('border-navy', 'bg-navy', 'bg-opacity-5');
+      lblSched.classList.add('border-gray-200');
+      document.getElementById('f-open-now').value = '1';
+      document.getElementById('f-start').value = '';
+      startSet = true;
+    } else {
+      picker.classList.remove('hidden');
+      lblSched.classList.add('border-navy', 'bg-navy', 'bg-opacity-5');
+      lblSched.classList.remove('border-gray-200');
+      lblNow.classList.remove('border-navy', 'bg-navy', 'bg-opacity-5');
+      lblNow.classList.add('border-gray-200');
+      document.getElementById('f-open-now').value = '';
+      startSet = false;
+    }
+    updateSummary();
+  };
+
+  // ── Start confirm ──────────────────────────────────────────────────────────
+  window.confirmStart = function () {
+    var d = document.getElementById('start-date').value;
+    var t = document.getElementById('start-time').value || '08:00';
+    if (!d) { alert('Please pick a start date.'); return; }
+    var dt = new Date(d + 'T' + t);
+    if (dt <= new Date()) { alert('Start time must be in the future.'); return; }
+    document.getElementById('f-start').value = toLocalISO(dt);
+    document.getElementById('f-open-now').value = '';
+    var msg = document.getElementById('start-confirmed');
+    msg.textContent = '✓ Opens ' + formatDisplay(dt);
+    msg.classList.remove('hidden');
+    startSet = true;
+    updateSummary();
+  };
+
+  // ── Duration presets ───────────────────────────────────────────────────────
+  window.applyPreset = function (days) {
+    var base = getEffectiveStart() || new Date();
+    var end = new Date(base.getTime() + days * 24 * 60 * 60 * 1000);
+    // Snap to 17:00 on the target day for a clean closing time
+    end.setHours(17, 0, 0, 0);
+
+    document.getElementById('end-date').value =
+      end.getFullYear() + '-' + pad(end.getMonth() + 1) + '-' + pad(end.getDate());
+    document.getElementById('end-time').value = '17:00';
+    document.getElementById('close-picker').classList.remove('hidden');
+
+    // Highlight active preset
+    document.querySelectorAll('.preset-btn').forEach(function (b) {
+      b.classList.remove('border-navy', 'text-navy', 'bg-navy', 'bg-opacity-5');
+      b.classList.add('border-gray-200', 'text-gray-600');
+    });
+    event.currentTarget.classList.add('border-navy', 'text-navy');
+    event.currentTarget.classList.remove('border-gray-200', 'text-gray-600');
+
+    // Auto-confirm the preset
+    document.getElementById('f-end').value = toLocalISO(end);
+    var msg = document.getElementById('end-confirmed');
+    msg.textContent = '✓ Closes ' + formatDisplay(end);
+    msg.classList.remove('hidden');
+    endSet = true;
+    updateSummary();
+  };
+
+  window.showCustomClose = function () {
+    document.getElementById('close-picker').classList.remove('hidden');
+    document.querySelectorAll('.preset-btn').forEach(function (b) {
+      b.classList.remove('border-navy', 'text-navy');
+      b.classList.add('border-gray-200', 'text-gray-600');
+    });
+    document.getElementById('btn-custom').classList.add('border-navy', 'text-navy');
+    document.getElementById('btn-custom').classList.remove('border-gray-200', 'text-gray-600');
+  };
+
+  // ── End confirm ────────────────────────────────────────────────────────────
+  window.confirmEnd = function () {
+    var d = document.getElementById('end-date').value;
+    var t = document.getElementById('end-time').value || '17:00';
+    if (!d) { alert('Please pick a closing date.'); return; }
+    var dt = new Date(d + 'T' + t);
+    var base = getEffectiveStart() || new Date();
+    if (dt <= base) { alert('Closing time must be after the opening time.'); return; }
+    document.getElementById('f-end').value = toLocalISO(dt);
+    var msg = document.getElementById('end-confirmed');
+    msg.textContent = '✓ Closes ' + formatDisplay(dt);
+    msg.classList.remove('hidden');
+    endSet = true;
+    updateSummary();
+  };
+
+  // ── Summary + submit gate ──────────────────────────────────────────────────
+  function updateSummary() {
+    var btn = document.getElementById('confirm-btn');
+    var summary = document.getElementById('schedule-summary');
+
+    if (!startSet || !endSet) {
+      btn.disabled = true;
+      summary.classList.add('hidden');
+      return;
+    }
+
+    btn.disabled = false;
+
+    var lines = [];
+    if (getOpenMode() === 'now') {
+      lines.push('<span class="font-semibold">Opens:</span> Immediately on confirm');
+    } else {
+      var sv = document.getElementById('f-start').value;
+      if (sv) lines.push('<span class="font-semibold">Opens:</span> ' + formatDisplay(new Date(sv)));
+    }
+    var ev = document.getElementById('f-end').value;
+    if (ev) lines.push('<span class="font-semibold">Closes:</span> ' + formatDisplay(new Date(ev)));
+
+    summary.innerHTML = lines.map(function (l) { return '<p>' + l + '</p>'; }).join('');
+    summary.classList.remove('hidden');
+  }
+
+  window.submitForm = function () {
+    if (!endSet) { alert('Please set a closing time.'); return; }
+    if (getOpenMode() === 'scheduled' && !startSet) { alert('Please set a start time.'); return; }
+    if (!confirm('Open this election? Candidates and positions will be locked.')) return;
+    document.getElementById('open-form').submit();
+  };
+
+  // ── Restore values on validation error ────────────────────────────────────
+  (function restoreOnError() {
+    var startVal = '{{ start_value|default:"" }}';
+    var endVal   = '{{ end_value|default:"" }}';
+    var openNow  = '{{ open_now|default:"on" }}';
+
+    if (endVal) {
+      var ed = new Date(endVal);
+      document.getElementById('end-date').value =
+        ed.getFullYear() + '-' + pad(ed.getMonth() + 1) + '-' + pad(ed.getDate());
+      document.getElementById('end-time').value = pad(ed.getHours()) + ':' + pad(ed.getMinutes());
+      document.getElementById('f-end').value = endVal;
+      var msg = document.getElementById('end-confirmed');
+      msg.textContent = '✓ Closes ' + formatDisplay(ed);
+      msg.classList.remove('hidden');
+      document.getElementById('close-picker').classList.remove('hidden');
+      endSet = true;
+    }
+
+    if (!openNow && startVal) {
+      document.querySelector('input[value="scheduled"]').checked = true;
+      onOpenModeChange();
+      var sd = new Date(startVal);
+      document.getElementById('start-date').value =
+        sd.getFullYear() + '-' + pad(sd.getMonth() + 1) + '-' + pad(sd.getDate());
+      document.getElementById('start-time').value = pad(sd.getHours()) + ':' + pad(sd.getMinutes());
+      document.getElementById('f-start').value = startVal;
+      var smsg = document.getElementById('start-confirmed');
+      smsg.textContent = '✓ Opens ' + formatDisplay(sd);
+      smsg.classList.remove('hidden');
+      startSet = true;
+    }
+
+    updateSummary();
+  })();
+})();
+</script>
+{% endblock %}

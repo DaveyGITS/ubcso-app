@@ -1,0 +1,30 @@
+{
+  "name": "ubcso-app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "jest --testPathPattern=static/js/tests --runInBand"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "jest": {
+    "testEnvironment": "jsdom",
+    "testMatch": [
+      "**/static/js/tests/**/*.test.js"
+    ]
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.5.0",
+    "fast-check": "^3.23.2",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "postcss": "^8.5.10",
+    "tailwindcss": "^3.4.19",
+    "vite": "^8.0.8"
+  }
+}

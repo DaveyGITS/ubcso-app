@@ -1,0 +1,454 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Application Requirements — UB-CSO Admin{% endblock %}
+{% block breadcrumb %}Application Requirements{% endblock %}
+{% block mobile_title %}Requirements{% endblock %}
+
+{% block content %}
+<div class="fixed top-0 left-0 pointer-events-none" style="z-index:1;width:70%;height:60%;background:radial-gradient(ellipse at 0% 0%, rgba(34,119,224,0.69) 0%, rgba(93,173,226,0.18) 30%, transparent 70%);"></div>
+<div class="max-w-3xl mx-auto relative" style="z-index:2;">
+
+    <div class="mb-6">
+        <a href="{% url 'core:admin_panel' %}" class="text-xs text-gray-400 hover:text-gray-600 mb-2 inline-flex items-center gap-1">
+            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            Admin Panel
+        </a>
+        <h1 class="text-xl font-semibold text-gray-900">Application Requirements</h1>
+        <p class="text-sm text-gray-400 mt-0.5">Configure document requirements for each application type</p>
+    </div>
+
+    {# ── Error / success messages ───────────────────────────────────────────── #}
+    {% if messages %}
+    {% for message in messages %}
+    <div class="rounded-xl p-4 mb-4 {% if message.tags == 'error' %}bg-red-50 border border-red-200{% else %}bg-green-50 border border-green-200{% endif %}">
+        <p class="text-sm {% if message.tags == 'error' %}text-red-700{% else %}text-green-700{% endif %}">{{ message }}</p>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {# ── Tab navigation ─────────────────────────────────────────────────────── #}
+    <div class="relative mb-6">
+        <div class="flex gap-2 overflow-x-auto pb-1 tab-scroll-row"
+             style="scrollbar-width:none;-ms-overflow-style:none;-webkit-overflow-scrolling:touch;">
+            <button type="button" onclick="showTab('institutional')"
+                    id="tab-btn-institutional"
+                    class="tab-btn flex-shrink-0 px-4 py-2 rounded-lg text-xs font-medium transition-colors whitespace-nowrap bg-navy text-white">
+                Institutional Renewal
+            </button>
+            <button type="button" onclick="showTab('standard_renewal')"
+                    id="tab-btn-standard_renewal"
+                    class="tab-btn flex-shrink-0 px-4 py-2 rounded-lg text-xs font-medium transition-colors whitespace-nowrap bg-white text-gray-600 border border-gray-200">
+                UB Chapter &amp; Student Org
+            </button>
+            <button type="button" onclick="showTab('new_applicant')"
+                    id="tab-btn-new_applicant"
+                    class="tab-btn flex-shrink-0 px-4 py-2 rounded-lg text-xs font-medium transition-colors whitespace-nowrap bg-white text-gray-600 border border-gray-200">
+                New Applicant
+            </button>
+            <button type="button" onclick="showTab('new_chapter')"
+                    id="tab-btn-new_chapter"
+                    class="tab-btn flex-shrink-0 px-4 py-2 rounded-lg text-xs font-medium transition-colors whitespace-nowrap bg-white text-gray-600 border border-gray-200">
+                New Chapter
+            </button>
+        </div>
+        <!-- Right fade hint on mobile to signal scrollability -->
+        <div class="absolute right-0 top-0 bottom-1 w-8 pointer-events-none"
+             style="background:linear-gradient(to right, transparent, rgba(255,255,255,0.95));"></div>
+    </div>
+
+    {# ══════════════════════════════════════════════════════════════════════════ #}
+    {# ── TAB: INSTITUTIONAL RENEWAL ─────────────────────────────────────────── #}
+    {# ══════════════════════════════════════════════════════════════════════════ #}
+    <div id="tab-institutional" class="tab-panel">
+        <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-sm font-semibold text-gray-700">Institutional Renewal Requirements</h2>
+                    <p class="text-xs text-gray-400 mt-0.5">Documents required when an Institutional org submits its renewal</p>
+                </div>
+                {% for req in requirements %}{% if req.status == 'institutional' and req.updated_by %}
+                <p class="text-xs text-gray-400 text-right flex-shrink-0">
+                    Updated by <span class="font-medium text-gray-600">{{ req.updated_by.username }}</span><br>
+                    {{ req.updated_at|date:"M d, Y" }}
+                </p>
+                {% endif %}{% endfor %}
+            </div>
+            <div class="p-6">
+                {% for req in requirements %}
+                {% if req.status == 'institutional' %}
+                {% if req.required_documents %}
+                <table class="w-full text-sm mb-5">
+                    <thead>
+                        <tr class="border-b border-gray-100">
+                            <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider pb-2 w-8">#</th>
+                            <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider pb-2">Title</th>
+                            <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider pb-2">Reference Link</th>
+                            <th class="pb-2 w-20"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-50">
+                        {% for entry in req.required_documents %}
+                        <tr>
+                            <td class="py-3 pr-3 text-xs text-gray-400">{{ forloop.counter }}</td>
+                            <td class="py-3 pr-4 font-medium text-gray-800">{{ entry.title }}</td>
+                            <td class="py-3 pr-4">
+                                {% if entry.link %}<a href="{{ entry.link }}" target="_blank" rel="noopener noreferrer" class="text-xs text-navy hover:underline truncate block max-w-xs">{{ entry.link }}</a>
+                                {% else %}<span class="text-xs text-gray-300">—</span>{% endif %}
+                            </td>
+                            <td class="py-3 text-right">
+                                <form method="POST" action="{% url 'organizations:admin_institutional_remove' %}" class="inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="index" value="{{ forloop.counter0 }}">
+                                    <button type="submit" onclick="return confirm('Remove this requirement?')"
+                                            class="text-xs text-red-400 hover:text-red-600 border border-red-200 hover:border-red-400 px-2 py-1 rounded transition-colors">Remove</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="text-center py-8 mb-5 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                    <p class="text-sm text-gray-400">No requirements configured yet.</p>
+                    <p class="text-xs text-gray-300 mt-0.5">Add the first requirement below.</p>
+                </div>
+                {% endif %}
+                {% endif %}
+                {% empty %}
+                <div class="text-center py-8 mb-5 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                    <p class="text-sm text-gray-400">No requirements configured yet.</p>
+                    <p class="text-xs text-gray-300 mt-0.5">Add the first requirement below.</p>
+                </div>
+                {% endfor %}
+
+                <div class="border-t border-gray-100 pt-5 mt-4">
+                    <h3 class="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-3">Add Requirement</h3>
+                    <form method="POST" action="{% url 'organizations:admin_institutional_add' %}">
+                        {% csrf_token %}
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Title <span class="text-red-500">*</span></label>
+                                <input type="text" name="title" required maxlength="200" placeholder="e.g. Letter of Intent"
+                                       class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy transition-colors">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Reference Link <span class="text-gray-400 font-normal">(optional)</span></label>
+                                <input type="url" name="link" maxlength="2048" placeholder="https://..."
+                                       class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy transition-colors">
+                            </div>
+                        </div>
+                        <button type="submit" class="px-5 py-2 bg-navy text-white rounded-lg text-sm font-medium hover:bg-navy-light transition-colors">
+                            Add Requirement
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ══════════════════════════════════════════════════════════════════════════ #}
+    {# ── TAB: STANDARD RENEWAL (UB Chapter & Student Org) ───────────────────── #}
+    {# ══════════════════════════════════════════════════════════════════════════ #}
+    <div id="tab-standard_renewal" class="tab-panel hidden">
+        <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-sm font-semibold text-gray-700">UB Chapter &amp; Student Org Renewal Requirements</h2>
+                    <p class="text-xs text-gray-400 mt-0.5">Documents required when a UB Chapter or Student Org submits its renewal</p>
+                </div>
+                {% if standard_renewal_req and standard_renewal_req.updated_by %}
+                <p class="text-xs text-gray-400 text-right flex-shrink-0">
+                    Updated by <span class="font-medium text-gray-600">{{ standard_renewal_req.updated_by.username }}</span><br>
+                    {{ standard_renewal_req.updated_at|date:"M d, Y" }}
+                </p>
+                {% endif %}
+            </div>
+            <div class="p-6">
+                {% if standard_renewal_req and standard_renewal_req.required_documents %}
+                <table class="w-full text-sm mb-5">
+                    <thead>
+                        <tr class="border-b border-gray-100">
+                            <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider pb-2 w-8">#</th>
+                            <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider pb-2">Title</th>
+                            <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider pb-2">Reference Link</th>
+                            <th class="pb-2 w-20"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-50">
+                        {% for entry in standard_renewal_req.required_documents %}
+                        <tr>
+                            <td class="py-3 pr-3 text-xs text-gray-400">{{ forloop.counter }}</td>
+                            <td class="py-3 pr-4 font-medium text-gray-800">{{ entry.title }}</td>
+                            <td class="py-3 pr-4">
+                                {% if entry.link %}<a href="{{ entry.link }}" target="_blank" rel="noopener noreferrer" class="text-xs text-navy hover:underline truncate block max-w-xs">{{ entry.link }}</a>
+                                {% else %}<span class="text-xs text-gray-300">—</span>{% endif %}
+                            </td>
+                            <td class="py-3 text-right">
+                                <form method="POST" action="{% url 'organizations:admin_standard_renewal_remove' %}" class="inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="index" value="{{ forloop.counter0 }}">
+                                    <button type="submit" onclick="return confirm('Remove this requirement?')"
+                                            class="text-xs text-red-400 hover:text-red-600 border border-red-200 hover:border-red-400 px-2 py-1 rounded transition-colors">Remove</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="mb-5 bg-gray-50 rounded-xl border border-dashed border-gray-200 p-4">
+                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Default document list (currently active)</p>
+                    <ol class="space-y-1.5">
+                        {% for doc in default_renewal_docs %}
+                        <li class="flex items-center gap-2 text-sm text-gray-600">
+                            <span class="w-5 h-5 rounded-full bg-gray-200 text-gray-500 text-xs font-semibold flex items-center justify-center flex-shrink-0">{{ forloop.counter }}</span>
+                            {{ doc }}
+                        </li>
+                        {% endfor %}
+                    </ol>
+                    <p class="text-xs text-gray-400 mt-3">Add entries below to override these defaults.</p>
+                </div>
+                {% endif %}
+
+                <div class="border-t border-gray-100 pt-5 mt-4">
+                    <h3 class="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-3">Add Requirement</h3>
+                    <form method="POST" action="{% url 'organizations:admin_standard_renewal_add' %}">
+                        {% csrf_token %}
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Title <span class="text-red-500">*</span></label>
+                                <input type="text" name="title" required maxlength="200" placeholder="e.g. Accomplishment Reports"
+                                       class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy transition-colors">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Reference Link <span class="text-gray-400 font-normal">(optional)</span></label>
+                                <input type="url" name="link" maxlength="2048" placeholder="https://..."
+                                       class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy transition-colors">
+                            </div>
+                        </div>
+                        <button type="submit" class="px-5 py-2 bg-navy text-white rounded-lg text-sm font-medium hover:bg-navy-light transition-colors">
+                            Add Requirement
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ══════════════════════════════════════════════════════════════════════════ #}
+    {# ── TAB: NEW APPLICANT ─────────────────────────────────────────────────── #}
+    {# ══════════════════════════════════════════════════════════════════════════ #}
+    <div id="tab-new_applicant" class="tab-panel hidden">
+        <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-sm font-semibold text-gray-700">New Applicant Requirements</h2>
+                    <p class="text-xs text-gray-400 mt-0.5">Documents required for new organization applications</p>
+                </div>
+                {% if new_applicant_req and new_applicant_req.updated_by %}
+                <p class="text-xs text-gray-400 text-right flex-shrink-0">
+                    Updated by <span class="font-medium text-gray-600">{{ new_applicant_req.updated_by.username }}</span><br>
+                    {{ new_applicant_req.updated_at|date:"M d, Y" }}
+                </p>
+                {% endif %}
+            </div>
+            <div class="p-6">
+                {% if new_applicant_req and new_applicant_req.required_documents %}
+                <table class="w-full text-sm mb-5">
+                    <thead>
+                        <tr class="border-b border-gray-100">
+                            <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider pb-2 w-8">#</th>
+                            <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider pb-2">Title</th>
+                            <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider pb-2">Reference Link</th>
+                            <th class="pb-2 w-20"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-50">
+                        {% for entry in new_applicant_req.required_documents %}
+                        <tr>
+                            <td class="py-3 pr-3 text-xs text-gray-400">{{ forloop.counter }}</td>
+                            <td class="py-3 pr-4 font-medium text-gray-800">{{ entry.title }}</td>
+                            <td class="py-3 pr-4">
+                                {% if entry.link %}<a href="{{ entry.link }}" target="_blank" rel="noopener noreferrer" class="text-xs text-navy hover:underline truncate block max-w-xs">{{ entry.link }}</a>
+                                {% else %}<span class="text-xs text-gray-300">—</span>{% endif %}
+                            </td>
+                            <td class="py-3 text-right">
+                                <form method="POST" action="{% url 'organizations:admin_accreditation_req_remove' 'new_applicant' %}" class="inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="index" value="{{ forloop.counter0 }}">
+                                    <button type="submit" onclick="return confirm('Remove this requirement?')"
+                                            class="text-xs text-red-400 hover:text-red-600 border border-red-200 hover:border-red-400 px-2 py-1 rounded transition-colors">
+                                        Remove
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="text-center py-8 mb-5 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                    <p class="text-sm text-gray-400">No requirements configured yet.</p>
+                    <p class="text-xs text-gray-300 mt-0.5">Add the first requirement below.</p>
+                </div>
+                {% endif %}
+
+                <div class="border-t border-gray-100 pt-5 mt-4">
+                    <h3 class="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-3">Add Requirement</h3>
+                    <form method="POST" action="{% url 'organizations:admin_accreditation_req_add' 'new_applicant' %}">
+                        {% csrf_token %}
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Title <span class="text-red-500">*</span></label>
+                                <input type="text" name="title" required maxlength="200" placeholder="e.g. Letter of Intent"
+                                       class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy transition-colors">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Reference Link <span class="text-gray-400 font-normal">(optional)</span></label>
+                                <input type="url" name="link" maxlength="2048" placeholder="https://..."
+                                       class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy transition-colors">
+                            </div>
+                        </div>
+                        <button type="submit" class="px-5 py-2 bg-navy text-white rounded-lg text-sm font-medium hover:bg-navy-light transition-colors">
+                            Add Requirement
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ══════════════════════════════════════════════════════════════════════════ #}
+    {# ── TAB: NEW CHAPTER ───────────────────────────────────────────────────── #}
+    {# ══════════════════════════════════════════════════════════════════════════ #}
+    <div id="tab-new_chapter" class="tab-panel hidden">
+        <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-sm font-semibold text-gray-700">New Chapter Requirements</h2>
+                    <p class="text-xs text-gray-400 mt-0.5">Documents required for new chapter applications. Mark entries as optional where applicable.</p>
+                </div>
+                {% if new_chapter_req and new_chapter_req.updated_by %}
+                <p class="text-xs text-gray-400 text-right flex-shrink-0">
+                    Updated by <span class="font-medium text-gray-600">{{ new_chapter_req.updated_by.username }}</span><br>
+                    {{ new_chapter_req.updated_at|date:"M d, Y" }}
+                </p>
+                {% endif %}
+            </div>
+            <div class="p-6">
+                {% if new_chapter_req and new_chapter_req.required_documents %}
+                <table class="w-full text-sm mb-5">
+                    <thead>
+                        <tr class="border-b border-gray-100">
+                            <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider pb-2 w-8">#</th>
+                            <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider pb-2">Title</th>
+                            <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider pb-2">Reference Link</th>
+                            <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider pb-2 w-20">Optional</th>
+                            <th class="pb-2 w-20"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-50">
+                        {% for entry in new_chapter_req.required_documents %}
+                        <tr>
+                            <td class="py-3 pr-3 text-xs text-gray-400">{{ forloop.counter }}</td>
+                            <td class="py-3 pr-4 font-medium text-gray-800">{{ entry.title }}</td>
+                            <td class="py-3 pr-4">
+                                {% if entry.link %}<a href="{{ entry.link }}" target="_blank" rel="noopener noreferrer" class="text-xs text-navy hover:underline truncate block max-w-xs">{{ entry.link }}</a>
+                                {% else %}<span class="text-xs text-gray-300">—</span>{% endif %}
+                            </td>
+                            <td class="py-3 pr-4">
+                                {% if entry.optional %}
+                                <span class="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">Optional</span>
+                                {% else %}
+                                <span class="text-xs text-gray-300">Required</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3 text-right">
+                                <form method="POST" action="{% url 'organizations:admin_accreditation_req_remove' 'new_chapter' %}" class="inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="index" value="{{ forloop.counter0 }}">
+                                    <button type="submit" onclick="return confirm('Remove this requirement?')"
+                                            class="text-xs text-red-400 hover:text-red-600 border border-red-200 hover:border-red-400 px-2 py-1 rounded transition-colors">
+                                        Remove
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="text-center py-8 mb-5 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                    <p class="text-sm text-gray-400">No requirements configured yet.</p>
+                    <p class="text-xs text-gray-300 mt-0.5">Add the first requirement below.</p>
+                </div>
+                {% endif %}
+
+                <div class="border-t border-gray-100 pt-5 mt-4">
+                    <h3 class="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-3">Add Requirement</h3>
+                    <form method="POST" action="{% url 'organizations:admin_accreditation_req_add' 'new_chapter' %}">
+                        {% csrf_token %}
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Title <span class="text-red-500">*</span></label>
+                                <input type="text" name="title" required maxlength="200" placeholder="e.g. Letter of Intent"
+                                       class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy transition-colors">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Reference Link <span class="text-gray-400 font-normal">(optional)</span></label>
+                                <input type="url" name="link" maxlength="2048" placeholder="https://..."
+                                       class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy transition-colors">
+                            </div>
+                        </div>
+                        <label class="flex items-center gap-2 mb-3 cursor-pointer">
+                            <input type="checkbox" name="is_optional" class="rounded border-gray-300 text-navy focus:ring-navy">
+                            <span class="text-sm text-gray-600">Mark as optional</span>
+                        </label>
+                        <button type="submit" class="px-5 py-2 bg-navy text-white rounded-lg text-sm font-medium hover:bg-navy-light transition-colors">
+                            Add Requirement
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<style>
+.tab-scroll-row::-webkit-scrollbar { display: none; }
+</style>
+<script>
+function showTab(tabId) {
+    // Hide all panels
+    document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.add('hidden'); });
+    // Reset all buttons to inactive style
+    document.querySelectorAll('.tab-btn').forEach(function(b) {
+        b.style.background = '#fff';
+        b.style.color = '#4b5563';
+        b.style.border = '1px solid #e5e7eb';
+    });
+    // Show selected panel
+    document.getElementById('tab-' + tabId).classList.remove('hidden');
+    // Activate selected button
+    var btn = document.getElementById('tab-btn-' + tabId);
+    btn.style.background = '#1B2A7B';
+    btn.style.color = '#fff';
+    btn.style.border = '1px solid #1B2A7B';
+    // Update URL hash without scroll
+    history.replaceState(null, '', '#tab-' + tabId);
+}
+
+// On load: activate tab from URL hash or default to institutional
+(function() {
+    var hash = window.location.hash;
+    if (hash === '#tab-new_applicant') { showTab('new_applicant'); }
+    else if (hash === '#tab-new_chapter') { showTab('new_chapter'); }
+    else if (hash === '#tab-standard_renewal') { showTab('standard_renewal'); }
+    else { showTab('institutional'); }
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% load static %}
+{# Inner card partial — called by _notification_card.html with badge_class and badge_label #}
+
+{# ── Card wrapper — <a> if clickable, <div> otherwise ─────────────────────── #}
+{% if notification.link_url %}
+  {% if is_new %}
+  <a href="{{ notification.link_url }}"
+     class="block rounded-2xl border p-4 relative transition-colors duration-200 notif-unread hover:bg-amber-50 cursor-pointer group"
+     data-notif-id="{{ notification.id }}"
+     data-mark-read-url="{% url 'announcements:mark_notification_read' notification.id %}"
+     onclick="markReadAndNavigate(event, this)">
+    <span class="absolute top-4 right-4 w-2 h-2 bg-amber-400 rounded-full notif-dot"></span>
+  {% else %}
+  <a href="{{ notification.link_url }}"
+     class="block bg-white rounded-2xl border border-gray-200 p-4 relative transition-colors duration-200 hover:bg-gray-50 cursor-pointer group"
+     data-notif-id="{{ notification.id }}"
+     data-mark-read-url="{% url 'announcements:mark_notification_read' notification.id %}"
+     onclick="markReadAndNavigate(event, this)">
+  {% endif %}
+{% else %}
+  {% if is_new %}
+  <div class="rounded-2xl border p-4 relative transition-colors duration-500 notif-unread"
+       data-notif-id="{{ notification.id }}">
+    <span class="absolute top-4 right-4 w-2 h-2 bg-amber-400 rounded-full notif-dot"></span>
+  {% else %}
+  <div class="bg-white rounded-2xl border border-gray-200 p-4 relative"
+       data-notif-id="{{ notification.id }}">
+  {% endif %}
+{% endif %}
+
+    <div class="flex items-start gap-3">
+
+      {# ── Source logo ──────────────────────────────────────────────────────── #}
+      <div class="flex-shrink-0">
+        {% if notification.organization %}
+          {% if notification.organization.logo %}
+          <img src="{{ notification.organization.logo.url }}"
+               alt="{{ notification.organization.name }}"
+               class="w-10 h-10 rounded-full object-cover border border-gray-100"
+               title="{{ notification.organization.name }}">
+          {% else %}
+          <div class="w-10 h-10 rounded-full bg-navy flex items-center justify-center"
+               title="{{ notification.organization.name }}">
+            <span class="text-white text-xs font-bold">
+              {{ notification.organization.name|slice:":2"|upper }}
+            </span>
+          </div>
+          {% endif %}
+        {% else %}
+        <img src="{% static 'images/cso_logo.png' %}"
+             alt="UB-CSO"
+             class="w-10 h-10 rounded-full object-cover border border-gray-100"
+             title="UB-CSO System">
+        {% endif %}
+      </div>
+
+      {# ── Content ──────────────────────────────────────────────────────────── #}
+      <div class="flex-1 min-w-0 {% if notification.link_url %}pr-6{% elif is_new %}pr-4{% endif %}">
+
+        {# Category badge #}
+        {% if badge_label %}
+        <span class="inline-block text-xs font-semibold px-2 py-0.5 rounded-full mb-1 {{ badge_class }}">
+          {{ badge_label }}
+        </span>
+        {% endif %}
+
+        <p class="text-sm font-semibold {% if is_new %}text-gray-900{% else %}text-gray-600{% endif %}">
+          {{ notification.title }}
+        </p>
+        <p class="text-xs {% if is_new %}text-gray-600{% else %}text-gray-400{% endif %} mt-0.5 leading-relaxed">
+          {{ notification.message }}
+        </p>
+        <p class="text-xs text-gray-300 mt-2">{{ notification.created_at|date:"F d, Y · g:i A" }}</p>
+      </div>
+
+      {# ── Arrow icon (clickable only) ───────────────────────────────────────── #}
+      {% if notification.link_url %}
+      <div class="flex-shrink-0 self-center opacity-40 group-hover:opacity-70 transition-opacity">
+        <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </div>
+      {% endif %}
+
+    </div>
+
+{% if notification.link_url %}</a>{% else %}</div>{% endif %}

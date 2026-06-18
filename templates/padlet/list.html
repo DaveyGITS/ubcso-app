@@ -1,0 +1,467 @@
+{% extends 'base.html' %}
+
+{% block title %}NoteBoard — UB-CSO{% endblock %}
+{% block breadcrumb %}NoteBoard{% endblock %}
+{% block mobile_title %}NoteBoard{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ─── Page background with red glow ─────────────────────────────────────────── */
+#main-content { 
+    background: #f8f9fb !important;
+    position: relative;
+}
+
+#main-content::before {
+    content: '';
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80vw;
+    height: 80vh;
+    background: radial-gradient(
+        ellipse at center,
+        rgba(220, 38, 38, 0.15) 0%,
+        rgba(239, 68, 68, 0.10) 30%,
+        rgba(248, 113, 113, 0.05) 60%,
+        transparent 100%
+    );
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ─── Board card base ─────────────────────────────────────────── */
+.nb-card {
+    position: relative;
+    border-radius: 14px;
+    overflow: visible;
+    cursor: pointer;
+    transition: transform 0.22s cubic-bezier(.34,1.56,.64,1),
+                box-shadow 0.22s ease;
+    display: flex;
+    flex-direction: column;
+    min-height: 240px;
+}
+.nb-card:hover {
+    transform: translateY(-6px) scale(1.02);
+    z-index: 10;
+}
+
+/* ─── System board — yellow bottom-left → red-orange upper-right ─── */
+.nb-sys-card {
+    /* Gradient border trick: outer bg = border gradient, inner content clips it */
+    background: linear-gradient(
+        to bottom,
+        #7ec8e3 0%,
+        #5aafd4 30%,
+        #1a6fc4 70%,
+        #0d3d7a 100%
+    );
+    border: none;
+    padding: 3px; /* border thickness */
+    box-shadow: 0 4px 18px rgba(232,56,10,0.2), 0 1px 4px rgba(0,0,0,0.1);
+    border-radius: 14px;
+}
+.nb-sys-card:hover {
+    box-shadow: 0 12px 36px rgba(30,136,200,0.5), 0 4px 16px rgba(26,111,196,0.4);
+}
+/* Inner wrapper that holds the actual card gradient */
+.nb-sys-inner {
+    background: linear-gradient(
+        to top right,
+        #f5c518 0%,
+        #f5a623 25%,
+        #f07020 55%,
+        #e8380a 100%
+    );
+    border-radius: 11px; /* 14 - 3px padding */
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+    transition: background 0.3s ease;
+}
+.nb-sys-card:hover .nb-sys-inner {
+    background: linear-gradient(
+        to top right,
+        #c2dcff 0%,
+        #a0c4ff 30%,
+        #88b2ff 60%,
+        #6ba4ff 100%
+    );
+}
+
+/* ─── Org board color themes ──────────────────────────────────── */
+/* Blues */
+.nb-color-blue-slate   { background: linear-gradient(145deg, #4a6fa5 0%, #2d4a7a 100%); border: 1.5px solid rgba(255,255,255,0.15); }
+.nb-color-blue-ocean   { background: linear-gradient(145deg, #1e88c8 0%, #0d5a8a 100%); border: 1.5px solid rgba(255,255,255,0.15); }
+.nb-color-blue-denim   { background: linear-gradient(145deg, #3a5f8a 0%, #1e3a5f 100%); border: 1.5px solid rgba(255,255,255,0.12); }
+.nb-color-blue-sky     { background: linear-gradient(145deg, #5bb8e8 0%, #2a8abf 100%); border: 1.5px solid rgba(255,255,255,0.2); }
+/* Greens */
+.nb-color-green-sage   { background: linear-gradient(145deg, #7aab8a 0%, #4a7a5a 100%); border: 1.5px solid rgba(255,255,255,0.15); }
+.nb-color-green-forest { background: linear-gradient(145deg, #3a7a4a 0%, #1e4a2a 100%); border: 1.5px solid rgba(255,255,255,0.12); }
+.nb-color-green-mint   { background: linear-gradient(145deg, #6ecfa8 0%, #3aaa7a 100%); border: 1.5px solid rgba(255,255,255,0.2); }
+.nb-color-green-olive  { background: linear-gradient(145deg, #8a9a4a 0%, #5a6a2a 100%); border: 1.5px solid rgba(255,255,255,0.12); }
+/* Purples */
+.nb-color-purple-grape    { background: linear-gradient(145deg, #7a4a9a 0%, #4a2a6a 100%); border: 1.5px solid rgba(255,255,255,0.15); }
+.nb-color-purple-lavender { background: linear-gradient(145deg, #a07ac8 0%, #6a4a9a 100%); border: 1.5px solid rgba(255,255,255,0.18); }
+.nb-color-purple-plum     { background: linear-gradient(145deg, #6a3a7a 0%, #3a1a4a 100%); border: 1.5px solid rgba(255,255,255,0.12); }
+/* Reds / Pinks */
+.nb-color-red-rose     { background: linear-gradient(145deg, #c85a7a 0%, #8a2a4a 100%); border: 1.5px solid rgba(255,255,255,0.15); }
+.nb-color-red-crimson  { background: linear-gradient(145deg, #c0392b 0%, #7a1a10 100%); border: 1.5px solid rgba(255,255,255,0.12); }
+.nb-color-pink-blush   { background: linear-gradient(145deg, #e8a0b8 0%, #c06080 100%); border: 1.5px solid rgba(255,255,255,0.2); }
+/* Warm neutrals */
+.nb-color-warm-sand       { background: linear-gradient(145deg, #c8a87a 0%, #8a6a3a 100%); border: 1.5px solid rgba(255,255,255,0.15); }
+.nb-color-warm-terracotta { background: linear-gradient(145deg, #c87a5a 0%, #8a4a2a 100%); border: 1.5px solid rgba(255,255,255,0.15); }
+.nb-color-warm-caramel    { background: linear-gradient(145deg, #c89a5a 0%, #8a5a1a 100%); border: 1.5px solid rgba(255,255,255,0.15); }
+/* Dark */
+.nb-color-dark-charcoal { background: linear-gradient(145deg, #4a4a5a 0%, #1a1a2a 100%); border: 1.5px solid rgba(255,255,255,0.1); }
+.nb-color-dark-midnight { background: linear-gradient(145deg, #1a2a4a 0%, #0a0a1a 100%); border: 1.5px solid rgba(255,255,255,0.1); }
+/* Default fallback for org boards with no color set */
+.nb-org-default { background: linear-gradient(145deg, #2d4a7a 0%, #1a2a4a 100%); border: 1.5px solid rgba(255,255,255,0.12); }
+
+/* ─── Card cover image — blurred fill + contained foreground ─── */
+.nb-card-cover-wrap {
+    width: calc(100% - 1.5rem);
+    margin: 0.75rem 0.75rem 0;
+    aspect-ratio: 3 / 1;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+/* Blurred fill layer */
+.nb-card-cover-blur {
+    position: absolute;
+    inset: -10%;
+    width: 120%;
+    height: 120%;
+    object-fit: cover;
+    object-position: center;
+    filter: blur(14px) brightness(0.75) saturate(1.2);
+    transform: scale(1.05);
+    display: block;
+}
+/* Foreground — full image, never cropped */
+.nb-card-cover {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    display: block;
+    z-index: 1;
+}
+.nb-card-body {
+    padding: 0.75rem 1rem 0.9rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+.nb-card-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.35);
+}
+.nb-card-desc {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.75);
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.nb-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: auto;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(255,255,255,0.15);
+}
+.nb-card-meta {
+    font-size: 0.68rem;
+    color: rgba(255,255,255,0.65);
+    font-weight: 500;
+}
+.nb-card-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.18);
+    color: rgba(255,255,255,0.9);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    border: 1px solid rgba(255,255,255,0.22);
+}
+
+/* ─── Hover preview overlay ───────────────────────────────────── */
+.nb-preview-overlay {
+    display: none !important;
+}
+
+/* ─── Search + misc ───────────────────────────────────────────── */
+.board-card.hidden-by-search { display: none; }
+.section-empty-msg { display: none; }
+.section-empty-msg.visible { display: block; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="relative" style="z-index: 2;">
+
+<!-- Header -->
+<div class="flex items-center justify-between mb-4">
+    <div>
+        <h1 class="text-xl font-semibold text-gray-900">NoteBoard</h1>
+        <p class="text-sm text-gray-400 mt-0.5">Digital bulletin boards for the community</p>
+    </div>
+    <div class="flex items-center gap-2">
+        <a href="{% url 'padlet:padlet_archive' %}"
+           class="text-xs font-medium px-3 py-2 rounded-lg transition-colors"
+           style="background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%); color: #fff;">
+            Archive
+        </a>
+        {% if can_create %}
+        <a href="{% url 'padlet:padlet_create' %}"
+           class="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+           style="background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%); color: #fff;">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            New Board
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Search -->
+<div class="mb-6">
+    <div class="relative">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
+        </svg>
+        <input id="nb-search" type="text" placeholder="Search boards..."
+               class="w-full bg-white border border-red-200 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition-colors shadow-sm"
+               autocomplete="off">
+    </div>
+</div>
+
+<!-- ── System-wide Boards ── -->
+{% if system_boards %}
+<div class="mb-10" id="section-system">
+    <div class="flex items-center gap-2 mb-4">
+        <span class="inline-block w-2.5 h-2.5 rounded-full" style="background: linear-gradient(135deg,#e8520a,#1a6fc4);"></span>
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">System-wide Boards</h2>
+        <span class="text-xs text-gray-400">(visible to all students)</span>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5" id="grid-system">
+        {% for board in system_boards %}
+        <a href="{% url 'padlet:padlet_board' board.id %}"
+           class="nb-card nb-sys-card board-card"
+           data-title="{{ board.title|lower }}"
+           data-org=""
+           data-section="system"
+           data-index="{{ forloop.counter0 }}">
+
+            <div class="nb-sys-inner">
+                {% if board.cover_image %}
+                <div class="nb-card-cover-wrap">
+                    <img src="{{ board.cover_image.url }}" alt="" class="nb-card-cover-blur" aria-hidden="true">
+                    <img src="{{ board.cover_image.url }}" alt="" class="nb-card-cover">
+                </div>
+                {% endif %}
+
+                <div class="nb-card-body">
+                    <div class="flex items-start justify-between gap-2 mb-1">
+                        {% if cso_org and cso_org.logo %}
+                        <div class="flex items-center gap-2">
+                            <img src="{{ cso_org.logo.url }}" alt="UB-CSO"
+                                 class="w-7 h-7 rounded-full object-cover border border-white border-opacity-30 flex-shrink-0">
+                            <span class="nb-card-badge">UB-CSO</span>
+                        </div>
+                        {% else %}
+                        <span class="nb-card-badge">System-wide</span>
+                        {% endif %}
+                    </div>
+                    <div class="nb-card-title">{{ board.title }}</div>
+                    {% if board.description %}
+                    <div class="nb-card-desc">{{ board.description }}</div>
+                    {% endif %}
+                    <div class="nb-card-footer">
+                        <span class="nb-card-meta">{{ board.post_count }} note{{ board.post_count|pluralize }}</span>
+                        <span class="nb-card-meta">{{ board.created_at|date:"M d, Y" }}</span>
+                    </div>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    <div class="section-empty-msg text-center py-6 text-sm text-gray-400" id="empty-system">No system boards match your search.</div>
+    {% if system_boards|length > 6 %}
+    <div class="mt-4 text-center" id="viewall-system">
+        <button onclick="expandSection('system')" class="text-sm text-blue-600 font-medium hover:underline">
+            View all {{ system_boards|length }} boards ↓
+        </button>
+    </div>
+    <div class="mt-4 text-center" id="collapse-system" style="display:none;">
+        <button onclick="collapseSection('system')" class="text-sm text-gray-400 font-medium hover:underline">
+            Show less ↑
+        </button>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- ── Organization Boards ── -->
+{% if org_boards %}
+<div class="mb-10" id="section-org">
+    <div class="flex items-center gap-2 mb-4">
+        <span class="inline-block w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Organization Boards</h2>
+        <span class="text-xs text-gray-400">(members only)</span>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5" id="grid-org">
+        {% for board in org_boards %}
+        <a href="{% url 'padlet:padlet_board' board.id %}"
+           class="nb-card {% if board.board_color %}nb-color-{{ board.board_color }}{% else %}nb-org-default{% endif %} board-card"
+           data-title="{{ board.title|lower }}"
+           data-org="{{ board.organization.name|lower }}"
+           data-section="org"
+           data-index="{{ forloop.counter0 }}">
+
+            {% if board.cover_image %}
+            <div class="nb-card-cover-wrap">
+                <img src="{{ board.cover_image.url }}" alt="" class="nb-card-cover-blur" aria-hidden="true">
+                <img src="{{ board.cover_image.url }}" alt="" class="nb-card-cover">
+            </div>
+            {% endif %}
+
+            <div class="nb-card-body">
+                <div class="flex items-center gap-2 mb-1">
+                    {% if board.organization.logo %}
+                    <img src="{{ board.organization.logo.url }}" alt=""
+                         class="w-7 h-7 rounded-full object-cover border border-white border-opacity-30 flex-shrink-0">
+                    {% endif %}
+                    <span class="nb-card-badge">{{ board.organization.name|truncatechars:20 }}</span>
+                </div>
+                <div class="nb-card-title">{{ board.title }}</div>
+                {% if board.description %}
+                <div class="nb-card-desc">{{ board.description }}</div>
+                {% endif %}
+                <div class="nb-card-footer">
+                    <span class="nb-card-meta">{{ board.post_count }} note{{ board.post_count|pluralize }}</span>
+                    <span class="nb-card-meta">{{ board.created_at|date:"M d, Y" }}</span>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    <div class="section-empty-msg text-center py-6 text-sm text-gray-400" id="empty-org">No organization boards match your search.</div>
+    {% if org_boards|length > 6 %}
+    <div class="mt-4 text-center" id="viewall-org">
+        <button onclick="expandSection('org')" class="text-sm text-blue-600 font-medium hover:underline">
+            View all {{ org_boards|length }} boards ↓
+        </button>
+    </div>
+    <div class="mt-4 text-center" id="collapse-org" style="display:none;">
+        <button onclick="collapseSection('org')" class="text-sm text-gray-400 font-medium hover:underline">
+            Show less ↑
+        </button>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+{% if not system_boards and not org_boards %}
+<div class="text-center py-20">
+    <svg class="w-16 h-16 text-gray-200 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+    </svg>
+    <p class="text-gray-400 text-sm">No boards yet.</p>
+    {% if can_create %}
+    <a href="{% url 'padlet:padlet_create' %}" class="mt-3 inline-block text-sm text-blue-600 font-medium hover:underline">Create the first board →</a>
+    {% endif %}
+</div>
+{% endif %}
+
+</div>
+
+<script>
+(function () {
+    var LIMIT = 6;
+    var expanded = { system: false, org: false };
+
+    function applyLimit(section) {
+        if (expanded[section]) return;
+        document.querySelectorAll('.board-card[data-section="' + section + '"]').forEach(function (card) {
+            if (parseInt(card.dataset.index) >= LIMIT) card.style.display = 'none';
+        });
+    }
+    applyLimit('system');
+    applyLimit('org');
+
+    window.expandSection = function (section) {
+        expanded[section] = true;
+        document.querySelectorAll('.board-card[data-section="' + section + '"]').forEach(function (c) { c.style.display = ''; });
+        var btn = document.getElementById('viewall-' + section);
+        if (btn) btn.style.display = 'none';
+        var col = document.getElementById('collapse-' + section);
+        if (col) col.style.display = '';
+        var q = document.getElementById('nb-search').value.trim().toLowerCase();
+        if (q) filterCards(q);
+    };
+
+    window.collapseSection = function (section) {
+        expanded[section] = false;
+        document.querySelectorAll('.board-card[data-section="' + section + '"]').forEach(function (c) {
+            if (parseInt(c.dataset.index) >= LIMIT) c.style.display = 'none';
+        });
+        var btn = document.getElementById('viewall-' + section);
+        if (btn) btn.style.display = '';
+        var col = document.getElementById('collapse-' + section);
+        if (col) col.style.display = 'none';
+    };
+
+    function filterCards(q) {
+        ['system', 'org'].forEach(function (section) {
+            var total = 0, shown = 0;
+            document.querySelectorAll('.board-card[data-section="' + section + '"]').forEach(function (c) {
+                if (!q || c.dataset.title.includes(q) || c.dataset.org.includes(q)) total++;
+            });
+            document.querySelectorAll('.board-card[data-section="' + section + '"]').forEach(function (c) {
+                var match = !q || c.dataset.title.includes(q) || c.dataset.org.includes(q);
+                if (!match) { c.style.display = 'none'; return; }
+                if (!expanded[section] && shown >= LIMIT) { c.style.display = 'none'; }
+                else { c.style.display = ''; shown++; }
+            });
+            var va = document.getElementById('viewall-' + section);
+            if (va) {
+                if (!expanded[section] && total > LIMIT) {
+                    va.style.display = '';
+                    var b = va.querySelector('button');
+                    if (b) b.textContent = 'View all ' + total + ' board' + (total !== 1 ? 's' : '') + ' \u2193';
+                } else { va.style.display = 'none'; }
+            }
+            var em = document.getElementById('empty-' + section);
+            if (em) em.classList.toggle('visible', q.length > 0 && total === 0);
+        });
+    }
+
+    document.getElementById('nb-search').addEventListener('input', function () {
+        filterCards(this.value.trim().toLowerCase());
+    });
+})();
+</script>
+{% endblock %}

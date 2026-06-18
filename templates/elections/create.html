@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% block title %}Create Election — UB-CSO{% endblock %}
+{% block breadcrumb %}Elections / Create{% endblock %}
+{% block mobile_title %}Create Election{% endblock %}
+
+{% block content %}
+<!-- Blue glow — fixed to viewport, originates from top-left corner -->
+<div class="fixed top-0 left-0 pointer-events-none" style="
+    z-index: 1;
+    width: 70%;
+    height: 60%;
+    background: radial-gradient(ellipse at 0% 0%, rgba(34, 119, 224, 0.69) 0%, rgba(93,173,226,0.18) 30%, transparent 70%);
+"></div>
+
+<div class="relative" style="z-index: 2;">
+<div class="max-w-xl mx-auto">
+
+  <div class="mb-6">
+    <a href="{% url 'elections:election_list' %}" class="text-sm text-gray-500 hover:text-navy transition-colors">← Back to Elections</a>
+    <h1 class="text-xl font-bold text-navy mt-2">Create Election</h1>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="mb-4 px-4 py-3 rounded-lg text-sm bg-red-50 text-red-700 border border-red-200">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <form method="POST">
+      {% csrf_token %}
+
+      <!-- Organization -->
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Organization</label>
+        {% if eligible_orgs|length == 1 %}
+          {# Only one org — skip the picker and auto-select it #}
+          <input type="hidden" name="organization" value="{{ eligible_orgs.0.id }}">
+          <div class="border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 text-sm text-gray-700">
+            {{ eligible_orgs.0.name }}
+          </div>
+        {% else %}
+          <div class="border border-gray-300 rounded-lg overflow-hidden">
+              <select name="organization" required size="4"
+                      class="w-full text-sm focus:outline-none bg-white px-3 py-1"
+                      style="max-height: 9rem;">
+                <option value="">Select organization...</option>
+                {% for org in eligible_orgs %}
+                  <option value="{{ org.id }}">{{ org.name }}</option>
+                {% endfor %}
+              </select>
+          </div>
+          <p class="text-xs text-gray-400 mt-1">Scroll to see more organizations</p>
+        {% endif %}
+      </div>
+
+      <!-- Title -->
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Election Title</label>
+        <input type="text" name="title" required maxlength="200"
+               placeholder="e.g. Officer Elections AY 2025-2026"
+               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-light-blue transition-colors">
+      </div>
+
+      <!-- Description -->
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Description <span class="text-gray-400 font-normal">(optional)</span></label>
+        <textarea name="description" rows="3" placeholder="Brief description of this election..."
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-light-blue transition-colors resize-none"></textarea>
+      </div>
+
+      <!-- Academic Period -->
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Academic Period <span class="text-gray-400 font-normal">(optional)</span></label>
+        <select name="academic_period"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-light-blue transition-colors bg-white">
+          <option value="">None</option>
+          {% for period in academic_periods %}
+          <option value="{{ period.id }}" {% if period.is_current %}selected{% endif %}>
+            {{ period.name }}{% if period.is_current %} (current){% endif %}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <p class="text-xs text-gray-400 mb-4">Timing (start &amp; end) will be set when you open the election.</p>
+
+      <button type="submit"
+              class="w-full bg-navy text-white py-2.5 rounded-lg text-sm font-medium hover:bg-navy-light transition-colors">
+        Create Election
+      </button>
+    </form>
+  </div>
+
+</div><!-- end max-w-xl -->
+</div><!-- end relative z-2 -->
+{% endblock %}

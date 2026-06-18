@@ -1,0 +1,106 @@
+{% if error %}
+<p class="text-xs text-red-600 mb-2">{{ error }}</p>
+{% endif %}
+
+<!-- Voter pool description — who are the voters -->
+{% if voter_pool_description %}
+<div class="mb-3">
+  <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Who can vote</p>
+  <div class="flex flex-wrap gap-1.5">
+    {% for desc in voter_pool_description %}
+      <span class="inline-flex items-center gap-1 text-xs bg-navy bg-opacity-10 text-navy px-2.5 py-1 rounded-full font-medium">
+        <svg class="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        {{ desc }}
+      </span>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Summary pills -->
+<div class="mb-3 flex flex-wrap gap-1">
+  {% if election.voters_all_students %}
+    <span class="text-xs bg-navy bg-opacity-10 text-navy px-2 py-1 rounded-full">All students</span>
+  {% endif %}
+  {% if election.voters_org_members %}
+    <span class="text-xs bg-navy bg-opacity-10 text-navy px-2 py-1 rounded-full">This org's members</span>
+  {% endif %}
+  {% if election.voters_org_officers %}
+    <span class="text-xs bg-navy bg-opacity-10 text-navy px-2 py-1 rounded-full">This org's officers</span>
+  {% endif %}
+  {% if election.voters_all_officers %}
+    <span class="text-xs bg-navy bg-opacity-10 text-navy px-2 py-1 rounded-full">All officers (all orgs)</span>
+  {% endif %}
+  {% if election.voters_all_chairmen %}
+    <span class="text-xs bg-navy bg-opacity-10 text-navy px-2 py-1 rounded-full">All chairmen (all orgs)</span>
+  {% endif %}
+  {% if election.voters_cso_officers %}
+    <span class="text-xs bg-navy bg-opacity-10 text-navy px-2 py-1 rounded-full">CSO officers only</span>
+  {% endif %}
+  {% if not election.voters_all_students and not election.voters_org_members and not election.voters_org_officers and not election.voters_all_officers and not election.voters_all_chairmen and not election.voters_cso_officers %}
+    <p class="text-xs text-gray-400 italic">No criteria selected yet.</p>
+  {% endif %}
+</div>
+
+<p class="text-xs text-gray-500 mb-3">
+  {% if election.status == 'draft' %}
+    Preview: <strong>{{ pool_preview_count }}</strong> eligible voter(s)
+  {% else %}
+    <strong>{{ pool_preview_count }}</strong> voter(s) enrolled
+  {% endif %}
+</p>
+
+{% if election.status == 'draft' %}
+<button type="button"
+        onclick="document.getElementById('voter-pool-form').classList.toggle('hidden')"
+        class="text-xs text-light-blue hover:text-navy transition-colors mb-3 flex items-center gap-1">
+  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+  Edit voter pool
+</button>
+
+<div id="voter-pool-form" class="hidden">
+  <form hx-post="{% url 'elections:election_manage' election.id %}"
+        hx-target="#voter-pool-section"
+        hx-swap="innerHTML">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="save_voter_pool">
+    <div class="space-y-2 mb-3">
+      {% if election.organization.is_cso %}
+        {# CSO elections: org-wide options are redundant since CSO officers = all CSO members #}
+        <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+          <input type="checkbox" name="voters_all_students" {% if election.voters_all_students %}checked{% endif %} class="rounded">
+          All registered students <span class="text-xs text-gray-400">(system-wide)</span>
+        </label>
+        <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+          <input type="checkbox" name="voters_all_officers" {% if election.voters_all_officers %}checked{% endif %} class="rounded">
+          All officers <span class="text-xs text-gray-400">(all orgs — includes vice chairman & chairman)</span>
+        </label>
+        <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+          <input type="checkbox" name="voters_all_chairmen" {% if election.voters_all_chairmen %}checked{% endif %} class="rounded">
+          All chairmen <span class="text-xs text-gray-400">(all orgs)</span>
+        </label>
+        <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+          <input type="checkbox" name="voters_cso_officers" {% if election.voters_cso_officers %}checked{% endif %} class="rounded">
+          CSO officers only
+        </label>
+      {% else %}
+        {# Normal org elections: only within-org options #}
+        <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+          <input type="checkbox" name="voters_org_members" {% if election.voters_org_members %}checked{% endif %} class="rounded">
+          All active members <span class="text-xs text-gray-400">(this org only)</span>
+        </label>
+        <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+          <input type="checkbox" name="voters_org_officers" {% if election.voters_org_officers %}checked{% endif %} class="rounded">
+          All officers <span class="text-xs text-gray-400">(this org — includes vice chairman & chairman)</span>
+        </label>
+      {% endif %}
+    </div>
+    <button type="submit" class="w-full bg-navy text-white text-sm py-2 rounded-lg hover:bg-navy-light transition-colors">
+      Save
+    </button>
+  </form>
+</div>
+
+{% else %}
+  <p class="text-xs text-gray-400">Voter pool is locked once the election is open.</p>
+{% endif %}

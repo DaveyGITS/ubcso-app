@@ -1,0 +1,54 @@
+{% if error %}
+<p class="text-xs text-red-600 mb-2">{{ error }}</p>
+{% endif %}
+
+{# Update the count badge in the heading via out-of-band swap — hidden wrapper so it doesn't render visibly here #}
+<div style="display:none" aria-hidden="true">
+  <span id="positions-count" hx-swap-oob="true" class="text-gray-400 font-normal">({{ positions|length }})</span>
+</div>
+
+{% if positions %}
+  <ul class="space-y-2 mb-4" id="positions-list">
+    {% for pos in positions %}
+    <li id="pos-item-{{ pos.id }}" class="flex items-center justify-between text-sm py-1 border-b border-gray-100 last:border-0">
+      <div>
+        <span class="text-gray-800 font-medium">{{ pos.name }}</span>
+        <span class="text-xs text-gray-400 ml-1">→ {{ pos.get_target_role_display }}</span>
+      </div>
+      {% if election.status == 'draft' %}
+      <button type="button"
+              class="text-xs text-red-500 hover:text-red-700 transition-colors bg-transparent border-0 cursor-pointer"
+              onclick="removePosition({{ pos.id }}, this)">
+        Remove
+      </button>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p class="text-sm text-gray-400 mb-4" id="no-positions-msg">No positions yet.</p>
+{% endif %}
+
+{% if election.status == 'draft' %}
+<form hx-post="{% url 'elections:election_manage' election.id %}"
+      hx-target="#positions-section"
+      hx-swap="innerHTML"
+      hx-on::after-request="this.reset()"
+      class="space-y-2">
+  {% csrf_token %}
+  <input type="hidden" name="action" value="add_position">
+  <input type="text" name="name" placeholder="Position name (e.g. President)" required
+         class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-light-blue transition-colors">
+  <div class="flex gap-2">
+    <select name="target_role"
+            class="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-light-blue transition-colors">
+      <option value="officer">→ Officer</option>
+      <option value="co_chairman">→ Vice Chairman</option>
+      <option value="chairman">→ Chairman</option>
+    </select>
+    <button type="submit" class="bg-navy text-white text-sm px-3 py-1.5 rounded-lg hover:bg-navy-light transition-colors">Add</button>
+  </div>
+</form>
+{% elif election.status == 'open' %}
+<p class="text-xs text-gray-400 italic mt-2">Positions are locked while the election is open.</p>
+{% endif %}

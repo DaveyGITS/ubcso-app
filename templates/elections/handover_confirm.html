@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}Confirm Chairman Handover — UB-CSO{% endblock %}
+{% block breadcrumb %}Elections / Handover Confirmation{% endblock %}
+{% block mobile_title %}Chairman Handover{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto">
+
+  <div class="mb-6">
+    <a href="{% url 'elections:election_results' election.id %}?view=manage" class="text-sm text-gray-500 hover:text-navy transition-colors">← Back to Results</a>
+    <h1 class="text-xl font-bold text-navy mt-2">Chairman Handover</h1>
+    <p class="text-sm text-gray-500 mt-0.5">{{ election.title }} — {{ election.organization.name }}</p>
+  </div>
+
+  <!-- Transition summary -->
+  <div class="bg-white rounded-xl border border-gray-200 p-5 mb-4">
+    <h2 class="text-sm font-semibold text-navy mb-4">Transition Summary</h2>
+
+    {% for candidate in chairman_candidates %}
+    <div class="flex items-center gap-3 mb-3 last:mb-0">
+      {% if candidate.user.profile_picture %}
+        <img src="{{ candidate.user.profile_picture.url }}" alt="{{ candidate.user.get_full_name }}"
+             class="w-10 h-10 rounded-full object-cover flex-shrink-0">
+      {% else %}
+        <div class="w-10 h-10 rounded-full bg-navy flex items-center justify-center flex-shrink-0">
+          <span class="text-white text-sm font-bold">{{ candidate.user.first_name|first }}{{ candidate.user.last_name|first }}</span>
+        </div>
+      {% endif %}
+      <div>
+        <p class="text-sm font-semibold text-gray-900">{{ candidate.user.get_full_name }}</p>
+        <p class="text-xs text-gray-500">Elected as <strong>{{ candidate.position.name }}</strong>
+          ({% if election.organization.is_cso %}President{% else %}Chairman{% endif %})</p>
+      </div>
+    </div>
+    {% endfor %}
+
+    {% if outgoing %}
+    <div class="mt-4 pt-4 border-t border-gray-100">
+      <p class="text-xs text-gray-500 mb-2">Outgoing chairman</p>
+      <div class="flex items-center gap-3">
+        {% if outgoing.user.profile_picture %}
+          <img src="{{ outgoing.user.profile_picture.url }}" alt="{{ outgoing.user.get_full_name }}"
+               class="w-10 h-10 rounded-full object-cover flex-shrink-0">
+        {% else %}
+          <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+            <span class="text-gray-600 text-sm font-bold">{{ outgoing.user.first_name|first }}{{ outgoing.user.last_name|first }}</span>
+          </div>
+        {% endif %}
+        <div>
+          <p class="text-sm font-medium text-gray-800">{{ outgoing.user.get_full_name }}</p>
+          <p class="text-xs text-gray-400">Will have temporary vice chairman access for 24 hours</p>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if other_count %}
+    <div class="mt-4 pt-4 border-t border-gray-100">
+      <p class="text-xs text-gray-500">{{ other_count }} other winner(s) will also have their elected roles applied.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Handover note -->
+  <div class="bg-white rounded-xl border border-gray-200 p-5 mb-6">
+    <h2 class="text-sm font-semibold text-navy mb-1">Handover Note <span class="text-gray-400 font-normal">(optional)</span></h2>
+    <p class="text-xs text-gray-500 mb-3">This note will be delivered as a priority notification to the incoming chairman.</p>
+    <form method="POST">
+      {% csrf_token %}
+      <textarea name="note" rows="4"
+                placeholder="Write a handover note for the incoming chairman — ongoing tasks, important contacts, pending matters..."
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-light-blue transition-colors resize-none mb-4"></textarea>
+
+      <div class="flex gap-3">
+        <button type="submit"
+                class="flex-1 bg-navy text-white py-2.5 rounded-lg text-sm font-medium hover:bg-navy-light transition-colors">
+          Confirm Handover & Apply Results
+        </button>
+        <a href="{% url 'elections:election_results' election.id %}?view=manage"
+           class="px-4 py-2.5 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-50 transition-colors">
+          Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <div class="bg-orange bg-opacity-10 border border-orange border-opacity-20 rounded-xl p-4">
+    <p class="text-xs text-orange font-medium mb-1">What happens next</p>
+    <ul class="text-xs text-gray-600 space-y-1">
+      <li>· The elected chairman takes over immediately</li>
+      <li>· The outgoing chairman gets 24 hours of temporary vice chairman access</li>
+      <li>· The outgoing chairman can self-revoke their access at any time</li>
+      <li>· After 24 hours, access is automatically removed</li>
+    </ul>
+  </div>
+
+</div>
+{% endblock %}

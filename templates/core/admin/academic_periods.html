@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% block title %}Academic Periods — Admin Panel{% endblock %}
+{% block breadcrumb %}Admin Panel / Academic Periods{% endblock %}
+{% block mobile_title %}Academic Periods{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+
+  <div class="mb-6 flex items-center justify-between gap-4">
+    <div>
+      <a href="{% url 'core:admin_panel' %}" class="text-sm text-gray-500 hover:text-navy transition-colors">← Admin Panel</a>
+      <h1 class="text-xl font-bold text-navy mt-1">Academic Periods</h1>
+      <p class="text-sm text-gray-500 mt-0.5">Manage semesters and trigger school year transitions.</p>
+    </div>
+    <a href="{% url 'core:admin_school_year_transition' %}"
+       class="flex-shrink-0 bg-orange text-white text-sm px-4 py-2 rounded-lg hover:bg-orange-light transition-colors font-medium">
+      School Year Transition
+    </a>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="mb-4 px-4 py-3 rounded-lg text-sm
+        {% if message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200
+        {% else %}bg-green-50 text-green-700 border border-green-200{% endif %}">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Create new period -->
+  <div class="bg-white rounded-xl border border-gray-200 p-5 mb-6">
+    <h2 class="text-sm font-semibold text-navy mb-4">Create Academic Period</h2>
+    <form method="POST">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="create">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+        <div class="md:col-span-3">
+          <label class="block text-xs font-medium text-gray-600 mb-1">Period name</label>
+          <input type="text" name="name" required placeholder="e.g. 1st Semester 2025-2026"
+                 class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-light-blue transition-colors">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Start date</label>
+          <input type="date" name="start_date" required
+                 class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-light-blue transition-colors">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">End date</label>
+          <input type="date" name="end_date" required
+                 class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-light-blue transition-colors">
+        </div>
+        <div class="flex items-end pb-1">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" name="is_current" class="rounded">
+            <span class="text-sm text-gray-700">Set as current</span>
+          </label>
+        </div>
+      </div>
+      <button type="submit"
+              class="bg-navy text-white text-sm px-4 py-2 rounded-lg hover:bg-navy-light transition-colors">
+        Create Period
+      </button>
+    </form>
+  </div>
+
+  <!-- Periods list -->
+  <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-100">
+      <h2 class="text-sm font-semibold text-navy">All Periods</h2>
+    </div>
+    {% if periods %}
+    <div class="divide-y divide-gray-50">
+      {% for period in periods %}
+      <div class="px-5 py-4 flex items-center justify-between gap-3">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2">
+            <p class="text-sm font-medium text-gray-900">{{ period.name }}</p>
+            {% if period.is_current %}
+            <span class="text-xs bg-green-50 text-green-600 px-2 py-0.5 rounded-full font-medium">Current</span>
+            {% endif %}
+          </div>
+          <p class="text-xs text-gray-400 mt-0.5">
+            {{ period.start_date|date:"M d, Y" }} — {{ period.end_date|date:"M d, Y" }}
+          </p>
+        </div>
+        <div class="flex gap-2 flex-shrink-0">
+          {% if not period.is_current %}
+          <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="set_current">
+            <input type="hidden" name="period_id" value="{{ period.id }}">
+            <button type="submit"
+                    class="text-xs border border-navy text-navy px-3 py-1.5 rounded-lg hover:bg-navy hover:text-white transition-colors">
+              Set Current
+            </button>
+          </form>
+          <form method="POST" onsubmit="return confirm('Delete this period?')">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="period_id" value="{{ period.id }}">
+            <button type="submit"
+                    class="text-xs border border-red-200 text-red-400 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors">
+              Delete
+            </button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="px-5 py-10 text-center">
+      <p class="text-sm text-gray-400">No academic periods yet. Create one above.</p>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,568 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+
+
+{% block title %}Edit Profile — UB-CSO{% endblock %}
+
+{% block breadcrumb %}Edit Profile{% endblock %}
+
+{% block mobile_title %}Edit Profile{% endblock %}
+
+
+
+{% block extra_css %}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
+
+<style>
+
+    .cropper-modal { background: #1B2A7B; opacity: 0.8; }
+
+</style>
+
+{% endblock %}
+
+
+
+{% block content %}
+
+<div class="max-w-2xl mx-auto">
+
+
+
+    <div class="flex items-center gap-3 mb-6">
+
+        <a href="{% url 'accounts:profile' %}" class="text-gray-400 hover:text-gray-600 transition-colors">
+
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+
+        </a>
+
+        <h1 class="text-xl font-semibold text-gray-900">Edit profile</h1>
+
+    </div>
+
+
+
+    {% if messages %}
+
+        {% for message in messages %}
+
+        <div class="mb-4 p-3 rounded-lg text-sm
+
+            {% if message.tags == 'error' %}bg-red-50 text-red-600 border border-red-200
+
+            {% else %}bg-green-50 text-green-600 border border-green-200{% endif %}">
+
+            {{ message }}
+
+        </div>
+
+        {% endfor %}
+
+    {% endif %}
+
+
+
+    <form method="POST" action="{% url 'accounts:edit_profile' %}" enctype="multipart/form-data" id="profile-form">
+
+        {% csrf_token %}
+
+
+
+        <!-- Hidden inputs for cropped data -->
+
+        <input type="hidden" name="profile_picture_cropped" id="profile-picture-cropped">
+
+
+
+        <!-- Profile picture -->
+
+        <div class="bg-white rounded-2xl border border-gray-200 p-6 mb-4">
+
+            <h2 class="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wider">Profile picture</h2>
+
+            <div class="flex items-center gap-4">
+
+                <div id="avatar-preview">
+
+                    {% if user.profile_picture %}
+
+                        <img src="{{ user.profile_picture.url }}" alt="Profile"
+
+                             class="w-16 h-16 rounded-full object-cover ring-2 ring-gray-200" id="current-avatar">
+
+                    {% else %}
+
+                        <div class="w-16 h-16 rounded-full bg-navy flex items-center justify-center" id="current-avatar-placeholder">
+
+                            <span class="text-white text-xl font-semibold">{{ user.first_name|first }}{{ user.last_name|first }}</span>
+
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+                <div class="flex-1">
+
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Upload new photo</label>
+
+                    <input type="file" id="profile-picture-input" accept="image/*"
+
+                           class="w-full text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:bg-navy file:text-white hover:file:bg-navy-light file:cursor-pointer">
+
+                    <p class="text-xs text-gray-400 mt-1">JPG, PNG — will be cropped to a circle</p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- Bio -->
+
+        <div class="bg-white rounded-2xl border border-gray-200 p-6 mb-4">
+
+            <h2 class="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wider">About</h2>
+
+            <div class="mb-4">
+
+                <label class="block text-sm font-medium text-gray-700 mb-1">Bio</label>
+
+                <textarea name="bio" rows="4" placeholder="Tell others a little about yourself..."
+
+                          class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-navy transition-colors resize-none">{{ user.bio }}</textarea>
+
+            </div>
+
+            <div>
+
+                <label class="block text-sm font-medium text-gray-700 mb-1">Contact number <span class="text-gray-400 font-normal">(optional)</span></label>
+
+                <input type="text" name="contact_number" placeholder="e.g. 09XX-XXX-XXXX"
+
+                       value="{{ user.contact_number }}"
+
+                       class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-navy transition-colors">
+
+            </div>
+
+        </div>
+
+
+
+        <!-- Locked fields -->
+
+        <div class="bg-white rounded-2xl border border-gray-200 p-6 mb-4">
+
+            <h2 class="text-sm font-semibold text-gray-700 mb-1 uppercase tracking-wider">Academic information</h2>
+
+            {% if user.is_cso_admin or user.is_cso_president %}
+
+            <p class="text-xs text-gray-400 mb-4">As a CSO admin, you can edit these fields directly.</p>
+
+            <div class="space-y-3">
+
+                <div class="grid grid-cols-2 gap-3">
+
+                    <div>
+
+                        <label class="block text-sm font-medium text-gray-700 mb-1">First name</label>
+
+                        <input type="text" name="first_name" value="{{ user.first_name }}"
+
+                               class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-navy transition-colors">
+
+                    </div>
+
+                    <div>
+
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Last name</label>
+
+                        <input type="text" name="last_name" value="{{ user.last_name }}"
+
+                               class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-navy transition-colors">
+
+                    </div>
+
+                </div>
+
+                <div>
+
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Middle initial <span class="text-gray-400 font-normal">(optional)</span></label>
+
+                    <input type="text" name="middle_initial" value="{{ user.middle_initial|default:'' }}" maxlength="5"
+
+                           class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-navy transition-colors">
+
+                </div>
+
+                <div>
+
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Student ID</label>
+
+                    <input type="text" name="student_id" value="{{ user.student_id }}"
+
+                           class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-navy transition-colors font-mono">
+
+                </div>
+
+                <div>
+
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Course</label>
+
+                    <select name="course"
+                            class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-navy transition-colors bg-white">
+
+                        <option value="">Select course</option>
+
+                        {% regroup courses by department as department_list %}
+                        {% for department in department_list %}
+                            <optgroup label="{{ department.grouper }}">
+                                {% for course in department.list %}
+                                <option value="{{ course.id }}" {% if user.course_id == course.id %}selected{% endif %}>
+                                    {{ course.abbreviation }} — {{ course.name }}
+                                </option>
+                                {% endfor %}
+                            </optgroup>
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+                <div>
+
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Year level</label>
+
+                    <input type="number" name="year_level" value="{{ user.year_level }}" min="1"
+
+                           class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-navy transition-colors">
+
+                </div>
+
+            </div>
+
+            {% else %}
+
+            <p class="text-xs text-gray-400 mb-4">These fields are locked. Submit a correction request to the CSO admin to change them.</p>
+
+            <div class="space-y-3">
+
+                <div class="flex items-center justify-between py-2 border-b border-gray-50">
+
+                    <span class="text-sm text-gray-500">Full name</span>
+
+                    <span class="text-sm text-gray-400">{{ user.get_full_name }}</span>
+
+                </div>
+
+                <div class="flex items-center justify-between py-2 border-b border-gray-50">
+
+                    <span class="text-sm text-gray-500">Student ID</span>
+
+                    <span class="text-sm text-gray-400 font-mono">{{ user.student_id }}</span>
+
+                </div>
+
+                <div class="flex items-center justify-between py-2 border-b border-gray-50">
+
+                    <span class="text-sm text-gray-500">Course</span>
+
+                    <span class="text-sm text-gray-400">{{ user.course.name|default:"Not set" }}</span>
+
+                </div>
+
+                <div class="flex items-center justify-between py-2">
+
+                    <span class="text-sm text-gray-500">Year level</span>
+
+                    <span class="text-sm text-gray-400">Year {{ user.year_level }}</span>
+
+                </div>
+
+            </div>
+
+            <div class="mt-4 pt-4 border-t border-gray-100">
+
+                <a href="{% url 'accounts:my_correction_requests' %}"
+
+                   class="inline-flex items-center gap-2 text-sm text-navy hover:text-navy-light font-medium transition-colors">
+
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+
+                    Request a correction
+
+                </a>
+
+            </div>
+
+            {% endif %}
+
+        </div>
+
+
+
+        <div class="flex gap-3">
+
+            <a href="{% url 'accounts:profile' %}"
+
+               class="flex-1 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-600 font-medium text-center hover:bg-gray-50 transition-colors">
+
+                Cancel
+
+            </a>
+
+            <button type="submit"
+
+                    class="flex-1 py-2.5 bg-navy text-white rounded-lg text-sm font-medium hover:bg-navy-light transition-colors">
+
+                Save changes
+
+            </button>
+
+        </div>
+
+    </form>
+
+</div>
+
+
+
+<!-- Crop Modal -->
+
+<div id="crop-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
+
+    <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+
+        <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+
+            <h3 class="text-base font-semibold text-gray-900" id="crop-modal-title">Crop photo</h3>
+
+            <button onclick="closeCropModal()" class="text-gray-400 hover:text-gray-600 bg-transparent border-0 cursor-pointer">
+
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+
+            </button>
+
+        </div>
+
+        <div class="p-4">
+
+            <div class="bg-gray-100 rounded-xl overflow-hidden" style="max-height: 360px;">
+
+                <img id="crop-image" src="" alt="Crop" style="max-width:100%; display:block;">
+
+            </div>
+
+        </div>
+
+        <div class="px-5 pb-5 flex gap-3">
+
+            <button onclick="closeCropModal()"
+
+                    class="flex-1 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+
+                Cancel
+
+            </button>
+
+            <button onclick="applyCrop()"
+
+                    class="flex-1 py-2.5 bg-navy text-white rounded-lg text-sm font-medium hover:bg-navy-light transition-colors">
+
+                Apply crop
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+{% endblock %}
+
+
+
+{% block extra_js %}
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+
+<script>
+
+let cropper = null;
+
+let currentField = null; // 'avatar'
+
+
+
+const profileInput = document.getElementById('profile-picture-input');
+
+const cropImage = document.getElementById('crop-image');
+
+const cropModal = document.getElementById('crop-modal');
+
+
+
+profileInput.addEventListener('change', function(e) {
+
+    const file = e.target.files[0];
+
+    if (!file) return;
+
+    currentField = 'avatar';
+
+    document.getElementById('crop-modal-title').textContent = 'Crop profile photo';
+
+    openCropModal(file, true);
+
+});
+
+
+
+function openCropModal(file, isCircle) {
+
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+
+        cropImage.src = e.target.result;
+
+        cropModal.classList.remove('hidden');
+
+        setTimeout(() => {
+
+            if (cropper) cropper.destroy();
+
+            cropper = new Cropper(cropImage, {
+
+                aspectRatio: 1,
+
+                viewMode: 1,
+
+                dragMode: 'move',
+
+                autoCropArea: 0.9,
+
+                cropBoxResizable: true,
+
+                cropBoxMovable: true,
+
+                guides: true,
+
+                center: true,
+
+                highlight: false,
+
+                background: false,
+
+                ready: function() {
+
+                    if (isCircle) {
+
+                        const cropBox = document.querySelector('.cropper-crop-box');
+
+                        if (cropBox) cropBox.style.borderRadius = '50%';
+
+                        const viewBox = document.querySelector('.cropper-view-box');
+
+                        if (viewBox) viewBox.style.borderRadius = '50%';
+
+                    }
+
+                }
+
+            });
+
+        }, 100);
+
+    };
+
+    reader.readAsDataURL(file);
+
+}
+
+
+
+function closeCropModal() {
+
+    cropModal.classList.add('hidden');
+
+    if (cropper) { cropper.destroy(); cropper = null; }
+
+    // Reset the file input so user can re-select
+
+    profileInput.value = '';
+
+}
+
+
+
+function applyCrop() {
+
+    if (!cropper) return;
+
+    const canvas = cropper.getCroppedCanvas({ width: 400, height: 400 });
+
+    const dataURL = canvas.toDataURL('image/jpeg', 0.9);
+
+
+
+    // Update preview
+
+    const preview = document.getElementById('current-avatar') || document.getElementById('current-avatar-placeholder');
+
+    if (preview) {
+
+        const img = document.createElement('img');
+
+        img.src = dataURL;
+
+        img.className = 'w-16 h-16 rounded-full object-cover ring-2 ring-gray-200';
+
+        img.id = 'current-avatar';
+
+        preview.replaceWith(img);
+
+    }
+
+
+
+    // Store in hidden field
+
+    document.getElementById('profile-picture-cropped').value = dataURL;
+
+
+
+    cropModal.classList.add('hidden');
+
+    if (cropper) { cropper.destroy(); cropper = null; }
+
+}
+
+
+
+// On form submit — if cropped data exists, just let it submit normally
+
+// The hidden field 'profile_picture_cropped' is already populated and the view handles it
+
+document.getElementById('profile-form').addEventListener('submit', function(e) {
+
+    // Nothing special needed — the hidden field is already set by applyCrop()
+
+    // The view reads 'profile_picture_cropped' directly from POST data
+
+});
+
+</script>
+
+{% endblock %}
+

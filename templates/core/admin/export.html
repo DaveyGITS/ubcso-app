@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}Data Export — Admin{% endblock %}
+{% block breadcrumb %}Admin / Data Export{% endblock %}
+{% block mobile_title %}Data Export{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+
+  <div class="flex items-center gap-3 mb-6">
+    <a href="{% url 'core:admin_panel' %}" class="text-gray-400 hover:text-gray-600 transition-colors">
+      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+    </a>
+    <div>
+      <h1 class="text-xl font-semibold text-gray-900">Data Export</h1>
+      <p class="text-sm text-gray-400 mt-0.5">Download student and organization data</p>
+    </div>
+  </div>
+
+  <!-- Students export -->
+  <div class="bg-white rounded-2xl border border-gray-200 p-6 mb-4">
+    <div class="flex items-start gap-4">
+      <div class="w-12 h-12 bg-navy bg-opacity-10 rounded-xl flex items-center justify-center flex-shrink-0">
+        <svg class="w-6 h-6 text-navy" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+      </div>
+      <div class="flex-1">
+        <h2 class="text-sm font-semibold text-gray-900">Students</h2>
+        <p class="text-xs text-gray-400 mt-0.5 mb-4">Student ID, name, email, course, year level, contact number, date joined</p>
+        <div class="flex gap-2">
+          <div class="relative group">
+            <a href="{% url 'core:export_students' %}?format=csv"
+               class="inline-flex items-center gap-1.5 px-4 py-2 bg-navy text-white text-xs font-medium rounded-lg hover:bg-opacity-90 transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+              Download CSV
+            </a>
+            <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 text-center">
+              Plain text file (.csv). Opens in any spreadsheet app. No formatting.
+              <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+            </div>
+          </div>
+          <div class="relative group">
+            <a href="{% url 'core:export_students' %}?format=excel"
+               class="inline-flex items-center gap-1.5 px-4 py-2 border border-gray-200 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50 transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+              Download Excel
+            </a>
+            <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 text-center">
+              Formatted spreadsheet (.xlsx) with styled headers and auto-fitted columns.
+              <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Organizations export -->
+  <div class="bg-white rounded-2xl border border-gray-200 p-6">
+    <div class="flex items-start gap-4">
+      <div class="w-12 h-12 bg-orange bg-opacity-10 rounded-xl flex items-center justify-center flex-shrink-0">
+        <svg class="w-6 h-6 text-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"/></svg>
+      </div>
+      <div class="flex-1">
+        <h2 class="text-sm font-semibold text-gray-900">Organizations</h2>
+        <p class="text-xs text-gray-400 mt-0.5 mb-4">Name, categories, member count, approved reports, founded year, date created</p>
+        <div class="flex gap-2">
+          <div class="relative group">
+            <a href="{% url 'core:export_orgs' %}?format=csv"
+               class="inline-flex items-center gap-1.5 px-4 py-2 bg-navy text-white text-xs font-medium rounded-lg hover:bg-opacity-90 transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+              Download CSV
+            </a>
+            <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 text-center">
+              Plain text file (.csv). Opens in any spreadsheet app. No formatting.
+              <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+            </div>
+          </div>
+          <div class="relative group">
+            <a href="{% url 'core:export_orgs' %}?format=excel"
+               class="inline-flex items-center gap-1.5 px-4 py-2 border border-gray-200 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50 transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+              Download Excel
+            </a>
+            <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 text-center">
+              Formatted spreadsheet (.xlsx) with styled headers and auto-fitted columns.
+              <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="text-xs text-gray-400 mt-4 text-center">
+    Excel export requires <code class="bg-gray-100 px-1 rounded">openpyxl</code> — falls back to CSV if not installed.
+  </p>
+
+</div>
+{% endblock %}

@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Report Compilations — {{ org.name }}{% endblock %}
+{% block breadcrumb %}{{ org.name }} / Compilations{% endblock %}
+{% block mobile_title %}Compilations{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+
+    <div class="flex items-center gap-3 mb-6">
+        <a href="{% url 'reports:report_archive' org.id %}" class="text-gray-400 hover:text-gray-600 transition-colors">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        </a>
+        <div>
+            <h1 class="text-xl font-semibold text-gray-900">Report Compilations</h1>
+            <p class="text-sm text-gray-400 mt-0.5">{{ org.name }}</p>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+        <div class="mb-4 p-3 rounded-lg text-sm
+            {% if message.tags == 'error' %}bg-red-50 text-red-600 border border-red-200
+            {% else %}bg-green-50 text-green-600 border border-green-200{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if compilations %}
+    <div class="flex flex-col gap-4">
+        {% for comp in compilations %}
+        <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+            <!-- Compilation header -->
+            <div class="flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors border-b border-gray-100">
+                <button type="button"
+                        onclick="document.getElementById('comp-{{ comp.id }}').classList.toggle('hidden')"
+                        class="flex-1 flex items-center justify-between text-left gap-3">
+                    <div>
+                        <p class="text-sm font-semibold text-gray-900">{{ comp.name }}</p>
+                        <p class="text-xs text-gray-400 mt-0.5">
+                            {{ comp.reports.count }} report{{ comp.reports.count|pluralize }}
+                            · Created {{ comp.created_at|date:"M d, Y" }}
+                            {% if comp.created_by %} by {{ comp.created_by.get_full_name }}{% endif %}
+                        </p>
+                    </div>
+                    <svg class="w-4 h-4 text-gray-400 flex-shrink-0 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+                <!-- Action buttons -->
+                <div class="flex gap-2 ml-3 flex-shrink-0">
+                    <a href="{% url 'reports:report_compilation_edit' org.id comp.id %}"
+                       class="text-xs border border-gray-200 text-gray-600 px-2.5 py-1.5 rounded-lg hover:bg-gray-100 transition-colors whitespace-nowrap">
+                        Edit
+                    </a>
+                    <a href="{% url 'reports:report_compilation_delete' org.id comp.id %}"
+                       class="text-xs border border-red-200 text-red-500 px-2.5 py-1.5 rounded-lg hover:bg-red-50 transition-colors whitespace-nowrap">
+                        Delete
+                    </a>
+                </div>
+            </div>
+
+            <!-- Collapsible report list -->
+            <div id="comp-{{ comp.id }}" class="hidden">
+                {% with comp_reports=comp.reports.all %}
+                {% if comp_reports %}
+                <div class="divide-y divide-gray-50">
+                    {% for report in comp_reports %}
+                    <div class="px-5 py-3">
+                        <p class="text-sm font-medium text-gray-900">{{ report.title }}</p>
+                        {% if report.activity_name %}
+                        <p class="text-xs text-gray-500 mt-0.5">{{ report.activity_name }}</p>
+                        {% endif %}
+                        <div class="flex flex-wrap gap-2 mt-1.5">
+                            {% if report.date_of_activity %}
+                            <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                                {{ report.date_of_activity|date:"M d, Y" }}
+                            </span>
+                            {% endif %}
+                            {% if report.academic_year %}
+                            <span class="text-xs bg-navy bg-opacity-10 text-navy px-2 py-0.5 rounded-full">
+                                {{ report.academic_year }}
+                            </span>
+                            {% endif %}
+                            {% if report.semester %}
+                            <span class="text-xs bg-light-blue bg-opacity-10 text-light-blue px-2 py-0.5 rounded-full">
+                                {{ report.get_semester_display }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="px-5 py-4 text-center">
+                    <p class="text-sm text-gray-400">No reports in this compilation.</p>
+                </div>
+                {% endif %}
+                {% endwith %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="bg-white rounded-2xl border border-gray-200 text-center py-16">
+        <svg class="w-12 h-12 text-gray-200 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+        </svg>
+        <p class="text-sm text-gray-400 mb-4">No compilations yet.</p>
+        <a href="{% url 'reports:report_archive' org.id %}"
+           class="text-sm text-navy font-medium hover:underline">Go to Archive to create one →</a>
+    </div>
+    {% endif %}
+
+    <div class="mt-6 text-center">
+        <a href="{% url 'reports:report_archive' org.id %}"
+           class="text-sm text-gray-400 hover:text-gray-600 transition-colors">← Back to Archive</a>
+    </div>
+
+</div>
+{% endblock %}

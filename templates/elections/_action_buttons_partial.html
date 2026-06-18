@@ -1,0 +1,76 @@
+{% if election.status == 'draft' %}
+  {% if election.start_datetime %}
+    {# Scheduled draft — offer reschedule option #}
+    {% if voter_pool_configured %}
+    <a href="{% url 'elections:election_open' election.id %}"
+       class="bg-navy text-white text-sm px-4 py-2 rounded-lg hover:bg-navy-light transition-colors">
+      Reschedule
+    </a>
+    {% else %}
+    <span class="bg-navy text-white text-sm px-4 py-2 rounded-lg opacity-40 cursor-not-allowed"
+          title="Configure the voter pool before rescheduling">
+      Reschedule
+    </span>
+    {% endif %}
+  {% else %}
+    {# Unscheduled draft — normal open button, disabled if voter pool not configured #}
+    {% if voter_pool_configured %}
+    <a href="{% url 'elections:election_open' election.id %}"
+       class="bg-green-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+      Open Election
+    </a>
+    {% else %}
+    <span class="bg-green-600 text-white text-sm px-4 py-2 rounded-lg opacity-40 cursor-not-allowed"
+          title="Configure the voter pool before opening">
+      Open Election
+    </span>
+    {% endif %}
+  {% endif %}
+  <form method="POST" action="{% url 'elections:election_cancel' election.id %}">
+    {% csrf_token %}
+    <button type="submit"
+            class="bg-white border border-red-300 text-red-600 text-sm px-4 py-2 rounded-lg hover:bg-red-50 transition-colors"
+            onclick="return confirm('Cancel and delete this draft election? This cannot be undone.')">
+      Cancel Draft
+    </button>
+  </form>
+{% elif election.status == 'open' %}
+  {% if is_voter %}
+  <a href="{% url 'elections:election_vote' election.id %}"
+     class="bg-orange text-white text-sm px-4 py-2 rounded-lg hover:bg-orange-light transition-colors">
+    Vote Now
+  </a>
+  {% endif %}
+  <form method="POST" action="{% url 'elections:election_close' election.id %}">
+    {% csrf_token %}
+    <button type="submit" class="bg-yellow-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors"
+            onclick="return confirm('Close this election now?')">
+      Close Election
+    </button>
+  </form>
+{% elif election.status == 'closed' %}
+  <a href="{% url 'elections:election_release' election.id %}"
+     class="bg-navy text-white text-sm px-4 py-2 rounded-lg hover:bg-navy-light transition-colors">
+    Review &amp; Release Results
+  </a>
+{% elif election.status == 'results_released' %}
+  <a href="{% url 'elections:election_results' election.id %}?view=manage"
+     class="bg-light-blue text-white text-sm px-4 py-2 rounded-lg hover:bg-navy transition-colors">
+    View Results
+  </a>
+{% endif %}
+
+{% if election.status == 'closed' %}
+<form method="POST" action="{% url 'elections:election_delete' election.id %}"
+      onsubmit="return confirm('Permanently delete this election and all its data? This cannot be undone.')">
+  {% csrf_token %}
+  <button type="submit"
+          class="bg-white border border-red-300 text-red-600 text-sm px-4 py-2 rounded-lg hover:bg-red-50 transition-colors flex items-center gap-1.5">
+    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+    </svg>
+    Delete Election
+  </button>
+</form>
+{% endif %}

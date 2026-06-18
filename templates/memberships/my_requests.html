@@ -1,0 +1,289 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Requests — UB-CSO{% endblock %}
+{% block breadcrumb %}My Requests{% endblock %}
+{% block mobile_title %}My Requests{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Scrollable content area inside each section — auto height, max capped */
+.req-scroll {
+    overflow-y: auto;
+    max-height: 320px;
+    scrollbar-width: thin;
+    scrollbar-color: #bae6fd transparent;
+}
+.req-scroll::-webkit-scrollbar { width: 4px; }
+.req-scroll::-webkit-scrollbar-track { background: transparent; }
+.req-scroll::-webkit-scrollbar-thumb { background: #bae6fd; border-radius: 2px; }
+
+.req-scroll-navy {
+    overflow-y: auto;
+    max-height: 320px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.3) transparent;
+}
+.req-scroll-navy::-webkit-scrollbar { width: 4px; }
+.req-scroll-navy::-webkit-scrollbar-track { background: transparent; }
+.req-scroll-navy::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 2px; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Blue glow -->
+<div class="fixed top-0 left-0 pointer-events-none" style="z-index:1;width:70%;height:60%;background:radial-gradient(ellipse at 0% 0%,rgba(34,119,224,0.69) 0%,rgba(93,173,226,0.18) 30%,transparent 70%);"></div>
+
+<div class="relative" style="z-index:2;">
+
+    <h1 class="text-xl font-semibold text-gray-900 mb-6">My Requests</h1>
+
+    <!-- 2×2 grid — each card is fixed height, content scrolls inside -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+        <!-- ── S1: Org Invites — white + sky-blue outline ── -->
+        <div class="bg-white rounded-2xl flex flex-col" style="border:2px solid #7dd3fc;">
+            <div class="px-6 py-4 flex-shrink-0" style="border-bottom:1.5px solid #bae6fd;">
+                <div class="flex items-center gap-2.5 mb-0.5">
+                    <svg class="w-5 h-5 flex-shrink-0" style="color:#0369a1;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                    <h2 class="text-sm font-bold" style="color:#0369a1;letter-spacing:0.02em;">Org Invites</h2>
+                </div>
+                <p class="text-xs text-gray-400" style="margin-left:1.75rem;">Pending invitations from organizations</p>
+            </div>
+            <div class="req-scroll px-5 py-4 space-y-2">
+                {% for req in membership_requests %}{% if req.type == 'invite' and req.status == 'pending' %}
+                <div class="flex flex-wrap items-center gap-3 p-3 rounded-xl" style="background:#f0f9ff;border:1px solid #bae6fd;">
+                    {% if req.organization.logo %}
+                    <img src="{{ req.organization.logo.url }}" alt="Logo" class="w-9 h-9 rounded-full object-cover flex-shrink-0">
+                    {% else %}
+                    <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style="background:#0369a1;">
+                        <span class="text-white text-xs font-bold">{{ req.organization.name|slice:":2"|upper }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-semibold text-gray-900 truncate">{{ req.organization.name }}</p>
+                        <p class="text-xs" style="color:#0369a1;">{{ req.requested_at|date:"M d, Y" }}</p>
+                    </div>
+                    <div class="flex gap-2 flex-shrink-0">
+                        <form method="POST" action="{% url 'memberships:respond_invite' req.id %}">
+                            {% csrf_token %}<input type="hidden" name="action" value="accept">
+                            <button type="submit" class="text-xs text-white px-3 py-1.5 rounded-lg font-medium" style="background:#0369a1;">Accept</button>
+                        </form>
+                        <form method="POST" action="{% url 'memberships:respond_invite' req.id %}">
+                            {% csrf_token %}<input type="hidden" name="action" value="decline">
+                            <button type="submit" class="text-xs px-3 py-1.5 rounded-lg" style="border:1px solid #0369a1;color:#0369a1;background:transparent;">Decline</button>
+                        </form>
+                    </div>
+                </div>
+                {% endif %}{% endfor %}
+                {% if pending_invites_count == 0 %}
+                <p class="text-sm text-center py-10 text-gray-400">No pending invites.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ── S2: Membership Requests — white + sky-blue outline ── -->
+        <div class="bg-white rounded-2xl flex flex-col" style="border:2px solid #7dd3fc;">
+            <div class="px-6 py-4 flex-shrink-0" style="border-bottom:1.5px solid #bae6fd;">
+                <div class="flex items-center gap-2.5 mb-0.5">
+                    <svg class="w-5 h-5 flex-shrink-0" style="color:#0369a1;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                    </svg>
+                    <h2 class="text-sm font-bold" style="color:#0369a1;letter-spacing:0.02em;">Membership Requests</h2>
+                </div>
+                <p class="text-xs text-gray-400" style="margin-left:1.75rem;">Your join requests to organizations</p>
+            </div>
+            <div class="req-scroll px-5 py-4 space-y-2">
+                {% for req in membership_requests %}{% if req.type == 'request' %}
+                <div class="flex flex-wrap items-center gap-3 p-3 rounded-xl" style="background:#f0f9ff;border:1px solid #bae6fd;">
+                    {% if req.organization.logo %}
+                    <img src="{{ req.organization.logo.url }}" alt="Logo" class="w-9 h-9 rounded-full object-cover flex-shrink-0">
+                    {% else %}
+                    <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style="background:#0369a1;">
+                        <span class="text-white text-xs font-bold">{{ req.organization.name|slice:":2"|upper }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-semibold text-gray-900 truncate">{{ req.organization.name }}</p>
+                        <p class="text-xs" style="color:#0369a1;">{{ req.requested_at|date:"M d, Y" }}</p>
+                        {% if req.status == 'rejected' and req.rejection_reason %}
+                        <p class="text-xs text-red-400 mt-0.5">{{ req.rejection_reason }}</p>
+                        {% endif %}
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded-full font-medium flex-shrink-0"
+                          style="{% if req.status == 'pending' %}background:#fef9c3;color:#854d0e;{% elif req.status == 'accepted' %}background:#dcfce7;color:#166534;{% else %}background:#fee2e2;color:#991b1b;{% endif %}">
+                        {{ req.get_status_display }}
+                    </span>
+                    {% if req.status == 'pending' %}
+                    <form method="POST" action="{% url 'memberships:cancel_membership_request' req.id %}">
+                        {% csrf_token %}
+                        <button type="submit" onclick="return confirm('Cancel?')" class="text-xs bg-transparent border-0 cursor-pointer text-red-400">Cancel</button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endif %}{% endfor %}
+                {% if not membership_requests %}
+                <p class="text-sm text-center py-10 text-gray-400">No membership requests yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ── S3: Org Applications — white + sky-blue outline ── -->
+        <div class="bg-white rounded-2xl flex flex-col" style="border:2px solid #7dd3fc;">
+            <div class="px-6 py-4 flex-shrink-0" style="border-bottom:1.5px solid #bae6fd;">
+                <div class="flex items-center gap-2.5 mb-0.5">
+                    <svg class="w-5 h-5 flex-shrink-0" style="color:#0369a1;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                    <h2 class="text-sm font-bold" style="color:#0369a1;letter-spacing:0.02em;">Org Applications</h2>
+                </div>
+                <p class="text-xs text-gray-400" style="margin-left:1.75rem;">All org creation, claim, and accreditation requests</p>
+            </div>
+            <div class="req-scroll px-5 py-4 space-y-2">
+
+                {# — Legacy creation requests — #}
+                {% for req in org_requests %}
+                <div class="flex flex-wrap items-center gap-3 p-3 rounded-xl" style="background:#f0f9ff;border:1px solid #bae6fd;">
+                    <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background:#0369a1;">
+                        <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-semibold text-gray-900 truncate">{{ req.organization_name }}</p>
+                        <p class="text-xs text-gray-400">New org request · {{ req.created_at|date:"M d, Y" }}</p>
+                        {% if req.status == 'rejected' and req.rejection_reason %}
+                        <p class="text-xs text-red-400 mt-0.5">{{ req.rejection_reason }}</p>
+                        {% endif %}
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded-full font-medium flex-shrink-0"
+                          style="{% if req.status == 'pending' %}background:#fef9c3;color:#854d0e;{% elif req.status == 'approved' %}background:#dcfce7;color:#166534;{% else %}background:#fee2e2;color:#991b1b;{% endif %}">
+                        {{ req.get_status_display }}
+                    </span>
+                    {% if req.status == 'pending' %}
+                    <form method="POST" action="{% url 'organizations:cancel_org_request' req.id %}">
+                        {% csrf_token %}
+                        <button type="submit" onclick="return confirm('Cancel this request?')"
+                                class="text-xs font-medium px-2.5 py-1.5 rounded-lg border border-red-200 text-red-400 hover:bg-red-50 transition-colors">
+                            Cancel
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                {# — Org registration claims — #}
+                {% for reg in org_registrations %}
+                <div class="flex flex-wrap items-center gap-3 p-3 rounded-xl" style="background:#f0f9ff;border:1px solid #bae6fd;">
+                    <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background:#0369a1;">
+                        <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-semibold text-gray-900 truncate">{{ reg.org_name }}</p>
+                        <p class="text-xs text-gray-400">Claim existing org · {{ reg.created_at|date:"M d, Y" }}</p>
+                        {% if reg.admin_remarks %}
+                        <p class="text-xs text-red-400 mt-0.5">{{ reg.admin_remarks }}</p>
+                        {% endif %}
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded-full font-medium flex-shrink-0"
+                          style="{% if reg.status == 'pending' %}background:#fef9c3;color:#854d0e;{% elif reg.status == 'approved' %}background:#dcfce7;color:#166534;{% else %}background:#fee2e2;color:#991b1b;{% endif %}">
+                        {{ reg.get_status_display }}
+                    </span>
+                    {% if reg.status == 'pending' %}
+                    <form method="POST" action="{% url 'organizations:cancel_org_registration' reg.id %}">
+                        {% csrf_token %}
+                        <button type="submit" onclick="return confirm('Cancel this claim?')"
+                                class="text-xs font-medium px-2.5 py-1.5 rounded-lg border border-red-200 text-red-400 hover:bg-red-50 transition-colors">
+                            Cancel
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                {# — Accreditation applications — #}
+                {% for app in accreditation_applications %}
+                <div class="flex flex-wrap items-center gap-3 p-3 rounded-xl" style="background:#f0f9ff;border:1px solid #bae6fd;">
+                    {% if app.organization.logo %}
+                    <img src="{{ app.organization.logo.url }}" alt="Logo" class="w-9 h-9 rounded-full object-cover flex-shrink-0">
+                    {% else %}
+                    <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background:#0369a1;">
+                        <span class="text-white text-xs font-bold">{{ app.organization.name|slice:":2"|upper }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-semibold text-gray-900 truncate">{{ app.organization.name }}</p>
+                        <p class="text-xs text-gray-400">{{ app.get_registration_type_display }} · {{ app.submitted_at|date:"M d, Y" }}</p>
+                        {% if app.admin_remarks %}
+                        <p class="text-xs text-red-400 mt-0.5">{{ app.admin_remarks }}</p>
+                        {% endif %}
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded-full font-medium flex-shrink-0"
+                          style="{% if app.status == 'pending' %}background:#fef9c3;color:#854d0e;{% elif app.status == 'under_review' %}background:#e0f2fe;color:#0369a1;{% elif app.status == 'approved' %}background:#dcfce7;color:#166534;{% elif app.status == 'returned' %}background:#fef3c7;color:#92400e;{% else %}background:#fee2e2;color:#991b1b;{% endif %}">
+                        {{ app.get_status_display }}
+                    </span>
+                </div>
+                {% endfor %}
+
+                {% if not org_requests and not org_registrations and not accreditation_applications %}
+                <p class="text-sm text-center py-10 text-gray-400">No org applications yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ── S4: Leave Requests — navy #1B2A7B ── -->
+        <div class="rounded-2xl flex flex-col" style="background:#1B2A7B;border:2px solid #111D5E;">
+            <div class="px-6 py-4 flex-shrink-0" style="border-bottom:1.5px solid rgba(255,255,255,0.15);">
+                <div class="flex items-center gap-2.5 mb-0.5">
+                    <svg class="w-5 h-5 flex-shrink-0 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                    </svg>
+                    <h2 class="text-sm font-bold text-white" style="letter-spacing:0.02em;">Leave Requests</h2>
+                </div>
+                <p class="text-xs text-white" style="opacity:0.5;margin-left:1.75rem;">Requests to leave organizations</p>
+            </div>
+            <div class="req-scroll-navy px-5 py-4 space-y-2">
+                {% if leave_requests %}
+                {% for req in leave_requests %}
+                <div class="flex flex-wrap items-center gap-3 p-3 rounded-xl" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);">
+                    {% if req.organization.logo %}
+                    <img src="{{ req.organization.logo.url }}" alt="Logo" class="w-9 h-9 rounded-full object-cover flex-shrink-0">
+                    {% else %}
+                    <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(255,255,255,0.15);">
+                        <span class="text-white text-xs font-bold">{{ req.organization.name|slice:":2"|upper }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-semibold text-white truncate">{{ req.organization.name }}</p>
+                        <p class="text-xs text-white" style="opacity:0.6;">{{ req.created_at|date:"M d, Y" }}</p>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded-full font-medium flex-shrink-0"
+                          style="{% if req.status == 'pending' %}background:#fef9c3;color:#854d0e;{% elif req.status == 'approved' %}background:#dcfce7;color:#166534;{% else %}background:#fee2e2;color:#991b1b;{% endif %}">
+                        {{ req.get_status_display }}
+                    </span>
+                    {% if req.status == 'pending' %}
+                    <form method="POST" action="{% url 'memberships:cancel_leave_request' req.id %}">
+                        {% csrf_token %}
+                        <button type="submit" onclick="return confirm('Cancel this leave request?')"
+                                class="text-xs font-medium px-2.5 py-1.5 rounded-lg border text-white hover:bg-white hover:text-navy transition-colors"
+                                style="border-color:rgba(255,255,255,0.4);">
+                            Cancel
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="text-sm text-center py-10 text-white" style="opacity:0.5;">No leave requests yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+    </div><!-- end grid -->
+</div>
+{% endblock %}

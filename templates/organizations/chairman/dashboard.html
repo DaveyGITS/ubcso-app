@@ -1,0 +1,380 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage {{ org.name }} — UB-CSO{% endblock %}
+{% block breadcrumb %}Manage / {{ org.name }}{% endblock %}
+{% block mobile_title %}Manage Org{% endblock %}
+
+{% block content %}
+
+{% if not org.is_cso and org.status == 'renewal_due' %}
+<div class="mb-4 px-4 py-3 rounded-xl text-sm bg-orange bg-opacity-10 border border-orange border-opacity-30 flex items-start gap-2">
+    <svg class="w-4 h-4 text-orange flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <div>
+        <p class="font-medium text-orange">Renewal Required</p>
+        {% if renewal_period_closed %}
+        <p class="text-xs text-gray-600 mt-0.5">The renewal period for this school year has been closed. Your organization was not renewed in time and may be lapsed next cycle.</p>
+        {% else %}
+        <p class="text-xs text-gray-600 mt-0.5">Your organization's accreditation is due for renewal. Submit your renewal application to maintain active status.</p>
+        {% endif %}
+    </div>
+</div>
+{% elif not org.is_cso and org.status == 'lapsed' %}
+<div class="mb-4 px-4 py-3 rounded-xl text-sm bg-red-50 border border-red-200 flex items-start gap-2">
+    <svg class="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <div>
+        <p class="font-medium text-red-600">Accreditation Lapsed — Organization Inactive</p>
+        {% if school_year_transitioned and not renewal_period_closed %}
+        <p class="text-xs text-gray-600 mt-0.5">A new school year has begun. You may now submit a renewal application to restore your organization's active status.</p>
+        {% elif renewal_period_closed %}
+        <p class="text-xs text-gray-600 mt-0.5">The renewal period has been closed. Renewal submissions are no longer accepted for this cycle. A new school year transition will reopen the renewal window.</p>
+        {% else %}
+        <p class="text-xs text-gray-600 mt-0.5">Your organization is inactive and not publicly visible. Renewal can be submitted once a new school year is triggered by the CSO Admin.</p>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Org header -->
+<div class="bg-white rounded-2xl border border-gray-200 mb-6">
+    <!-- Banner -->
+    <div class="bg-navy relative overflow-hidden rounded-t-2xl org-banner-spacer" style="padding-top: 33.33%;">
+        <div class="absolute inset-0">
+        {% if org.banner %}
+            <img src="{{ org.banner.url }}" alt="Banner" class="w-full h-full object-cover">
+        {% else %}
+            <div class="absolute inset-0 bg-navy">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-light-blue opacity-10 rounded-full -mr-10 -mt-10"></div>
+                <div class="absolute bottom-0 left-16 w-20 h-20 bg-orange opacity-10 rounded-full -mb-8"></div>
+            </div>
+        {% endif %}
+        </div>
+    </div>
+    <div class="px-4 sm:px-5 pb-5">
+        <!-- Logo -->
+        <div class="-mt-16 mb-3 relative z-10 org-logo-row">
+            {% if org.logo %}
+                <img src="{{ org.logo.url }}" alt="Logo" class="w-28 h-28 sm:w-36 sm:h-36 rounded-full object-cover ring-4 ring-white flex-shrink-0">
+            {% else %}
+                <div class="w-28 h-28 sm:w-36 sm:h-36 rounded-full bg-navy flex items-center justify-center ring-4 ring-white flex-shrink-0">
+                    <span class="text-white text-2xl sm:text-3xl font-bold">{{ org.name|slice:":2"|upper }}</span>
+                </div>
+            {% endif %}
+        </div>
+        <!-- Name + role + action buttons -->
+        <div class="mb-3">
+            <div class="flex items-start justify-between gap-2 mb-1">
+                <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight min-w-0 break-words">{{ org.name }}</h1>
+                <div class="flex flex-wrap gap-2 flex-shrink-0 mt-1">
+                    {% if user_membership.role == 'chairman' %}
+                    {% if not org.is_cso %}
+                        {% if org.status == 'renewal_due' and not renewal_period_closed %}
+                        <a href="{% url 'organizations:renewal_apply' org.id %}"
+                           class="text-xs bg-orange text-white hover:bg-orange-dark px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
+                            Submit Renewal
+                        </a>
+                        {% elif org.status == 'lapsed' and school_year_transitioned and not renewal_period_closed %}
+                        <a href="{% url 'organizations:renewal_apply' org.id %}"
+                           class="text-xs bg-red-500 text-white hover:bg-red-600 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
+                            Submit Renewal
+                        </a>
+                        {% elif org.status == 'lapsed' and not school_year_transitioned %}
+                        <span class="text-xs border border-gray-200 text-gray-400 px-3 py-1.5 rounded-lg cursor-not-allowed whitespace-nowrap"
+                              title="Renewal available after a new school year is triggered">
+                            Submit Renewal
+                        </span>
+                        {% endif %}
+                    {% endif %}                    {% if org.is_cso %}
+                    <a href="{% url 'core:presidency_transfer' %}"
+                       class="text-xs border border-orange border-opacity-50 text-orange px-3 py-1.5 rounded-lg hover:bg-orange hover:bg-opacity-10 transition-colors whitespace-nowrap">
+                        Transfer Presidency
+                    </a>
+                    {% else %}
+                    <a href="{% url 'organizations:chairman_handover' org.id %}"
+                       class="text-xs border border-orange border-opacity-50 text-orange px-3 py-1.5 rounded-lg hover:bg-orange hover:bg-opacity-10 transition-colors whitespace-nowrap">
+                        Handover
+                    </a>
+                    {% endif %}
+                    {% endif %}
+                    {% if user_membership.role == 'co_chairman' and user_membership.co_chairman_expiry %}
+                    <a href="{% url 'organizations:chairman_revoke_temp' org.id %}"
+                       class="text-xs border border-red-200 text-red-400 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors whitespace-nowrap">
+                        Revoke access
+                    </a>
+                    {% elif user_membership.role == 'co_chairman' %}
+                    <div class="relative">
+                      <button type="button"
+                              onclick="document.getElementById('co-leave-dropdown').classList.toggle('hidden')"
+                              class="text-xs text-gray-400 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1 whitespace-nowrap">
+                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        Options
+                      </button>
+                      <div id="co-leave-dropdown" class="hidden absolute right-0 top-8 bg-white border border-gray-200 rounded-lg shadow-lg p-3 w-64 z-10">
+                        <p class="text-xs text-gray-500">
+                          <svg class="w-3 h-3 inline mr-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                          Your role must be reassigned by the chairman before you can submit a leave request.
+                        </p>
+                      </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            <p class="text-sm text-gray-400">
+                You are <span class="text-navy font-medium capitalize">
+                {% if org.is_cso and user_membership.role == 'chairman' %}President{% else %}{{ user_membership.get_role_display }}{% endif %}
+                </span>
+                {% if user_membership.custom_role %} · {{ user_membership.custom_role.name }}{% endif %}
+                {% if user_membership.co_chairman_expiry %}
+                <span class="ml-1 text-xs text-orange">(temp — expires {{ user_membership.co_chairman_expiry|date:"M d, g:i A" }})</span>
+                {% endif %}
+            </p>
+        </div>        <!-- Stat pills -->
+        <div class="flex flex-wrap gap-3">
+            <div class="flex items-center gap-1.5 bg-gray-50 rounded-lg px-3 py-2">
+                <svg class="w-4 h-4 text-navy" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                <span class="text-sm font-semibold text-gray-900">{{ total_members }}</span>
+                <span class="text-xs text-gray-400">members</span>
+            </div>
+            {% if pending_join_requests %}
+            <div class="flex items-center gap-1.5 bg-orange bg-opacity-10 rounded-lg px-3 py-2">
+                <svg class="w-4 h-4 text-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span class="text-sm font-semibold text-orange">{{ pending_join_requests|length }}</span>
+                <span class="text-xs text-orange">pending join</span>
+            </div>
+            {% endif %}
+            {% if pending_leave_requests %}
+            <div class="flex items-center gap-1.5 bg-red-50 rounded-lg px-3 py-2">
+                <svg class="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7"/></svg>
+                <span class="text-sm font-semibold text-red-500">{{ pending_leave_requests|length }}</span>
+                <span class="text-xs text-red-400">pending leave</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Nav tabs -->
+<div class="flex gap-1 mb-6 border-b border-gray-200 overflow-x-auto" style="scrollbar-width:none;">
+    <a href="{% url 'organizations:chairman_dashboard' org.id %}"
+       class="px-3 py-2 text-xs sm:text-sm font-medium border-b-2 border-navy text-navy -mb-px whitespace-nowrap">
+        Overview
+    </a>
+    <a href="{% url 'organizations:chairman_members' org.id %}"
+       class="px-3 py-2 text-xs sm:text-sm font-medium text-gray-400 hover:text-gray-600 border-b-2 border-transparent -mb-px transition-colors whitespace-nowrap">
+        Members
+    </a>
+    {% if not org.is_cso %}
+    <a href="{% url 'reports:org_reports' org.id %}"
+       class="px-3 py-2 text-xs sm:text-sm font-medium text-gray-400 hover:text-gray-600 border-b-2 border-transparent -mb-px transition-colors whitespace-nowrap">
+        Reports
+    </a>
+    <a href="{% url 'reports:report_archive' org.id %}"
+       class="px-3 py-2 text-xs sm:text-sm font-medium text-gray-400 hover:text-gray-600 border-b-2 border-transparent -mb-px transition-colors whitespace-nowrap">
+        Archive
+    </a>
+    {% endif %}
+    <a href="{% url 'organizations:chairman_edit_org' org.id %}"
+       class="px-3 py-2 text-xs sm:text-sm font-medium text-gray-400 hover:text-gray-600 border-b-2 border-transparent -mb-px transition-colors whitespace-nowrap">
+        Edit Profile
+    </a>
+    <a href="{% url 'organizations:org_profile' org.id %}"
+       class="px-3 py-2 text-xs sm:text-sm font-medium text-gray-400 hover:text-gray-600 border-b-2 border-transparent -mb-px transition-colors whitespace-nowrap">
+        Public ↗
+    </a>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- Pending join requests -->
+    <div class="bg-white rounded-2xl border border-gray-200 p-5">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-semibold text-gray-900">Pending Join Requests</h2>
+            {% if pending_join_requests %}
+            <span class="text-xs bg-orange bg-opacity-10 text-orange px-2 py-0.5 rounded-full font-medium">
+                {{ pending_join_requests|length }} pending
+            </span>
+            {% endif %}
+        </div>
+
+        {% if pending_join_requests %}
+        <div class="flex flex-col gap-3">
+            {% for req in pending_join_requests %}
+            <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                <!-- Avatar -->
+                {% if req.user.profile_picture %}
+                    <img src="{{ req.user.profile_picture.url }}" alt="Profile"
+                         class="w-9 h-9 rounded-full object-cover flex-shrink-0">
+                {% else %}
+                    <div class="w-9 h-9 rounded-full bg-navy flex items-center justify-center flex-shrink-0">
+                        <span class="text-white text-xs font-semibold">{{ req.user.first_name|first }}{{ req.user.last_name|first }}</span>
+                    </div>
+                {% endif %}
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-900 truncate">{{ req.user.get_full_name }}</p>
+                    <p class="text-xs text-gray-400">{{ req.user.student_id }} · {{ req.requested_at|date:"M d, Y" }}</p>
+                </div>
+                <div class="flex gap-2 flex-shrink-0">
+                    <form method="POST" action="{% url 'organizations:chairman_review_join' org.id req.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="approve">
+                        <button type="submit"
+                                class="text-xs bg-navy text-white px-3 py-1.5 rounded-lg hover:bg-navy-light transition-colors font-medium">
+                            Accept
+                        </button>
+                    </form>
+                    <form method="POST" action="{% url 'organizations:chairman_review_join' org.id req.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="reject">
+                        <button type="submit"
+                                class="text-xs border border-gray-200 text-gray-500 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+                            Reject
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-8">
+            <svg class="w-10 h-10 text-gray-200 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <p class="text-sm text-gray-400">No pending join requests</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Pending leave requests -->
+    <div class="bg-white rounded-2xl border border-gray-200 p-5">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-semibold text-gray-900">Pending Leave Requests</h2>
+            {% if pending_leave_requests %}
+            <span class="text-xs bg-red-100 text-red-500 px-2 py-0.5 rounded-full font-medium">
+                {{ pending_leave_requests|length }} pending
+            </span>
+            {% endif %}
+        </div>
+
+        {% if pending_leave_requests %}
+        <div class="flex flex-col gap-3">
+            {% for req in pending_leave_requests %}
+            <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                {% if req.user.profile_picture %}
+                    <img src="{{ req.user.profile_picture.url }}" alt="Profile"
+                         class="w-9 h-9 rounded-full object-cover flex-shrink-0">
+                {% else %}
+                    <div class="w-9 h-9 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
+                        <span class="text-white text-xs font-semibold">{{ req.user.first_name|first }}{{ req.user.last_name|first }}</span>
+                    </div>
+                {% endif %}
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-900 truncate">{{ req.user.get_full_name }}</p>
+                    {% if req.reason %}<p class="text-xs text-gray-400 truncate">{{ req.reason }}</p>{% endif %}
+                </div>
+                <div class="flex gap-2 flex-shrink-0">
+                    <form method="POST" action="{% url 'organizations:chairman_review_leave' org.id req.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="approve">
+                        <button type="submit"
+                                class="text-xs bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 transition-colors font-medium">
+                            Approve
+                        </button>
+                    </form>
+                    <form method="POST" action="{% url 'organizations:chairman_review_leave' org.id req.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="reject">
+                        <button type="submit"
+                                class="text-xs border border-gray-200 text-gray-500 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+                            Reject
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-8">
+            <svg class="w-10 h-10 text-gray-200 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <p class="text-sm text-gray-400">No pending leave requests</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Member overview -->
+    <div class="bg-white rounded-2xl border border-gray-200 p-5 lg:col-span-2">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-semibold text-gray-900">Member Overview</h2>
+            <a href="{% url 'organizations:chairman_members' org.id %}"
+               class="text-xs text-navy font-medium hover:underline">
+                Manage members →
+            </a>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div class="bg-gray-50 rounded-xl p-3 text-center">
+                <p class="text-2xl font-bold text-gray-900">{{ chairman|yesno:"1,0" }}</p>
+                <p class="text-xs text-gray-400 mt-0.5">{% if org.is_cso %}President{% else %}Chairman{% endif %}</p>
+            </div>
+            <div class="bg-gray-50 rounded-xl p-3 text-center">
+                <p class="text-2xl font-bold text-gray-900">{{ co_chairmen|length }}</p>
+                <p class="text-xs text-gray-400 mt-0.5">Vice Chairmen</p>
+            </div>
+            <div class="bg-gray-50 rounded-xl p-3 text-center">
+                <p class="text-2xl font-bold text-gray-900">{{ officers|length }}</p>
+                <p class="text-xs text-gray-400 mt-0.5">Officers</p>
+            </div>
+            <div class="bg-gray-50 rounded-xl p-3 text-center">
+                <p class="text-2xl font-bold text-gray-900">{{ regular_members|length }}</p>
+                <p class="text-xs text-gray-400 mt-0.5">Members</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Org Boards (Padlet) -->
+    <div class="bg-white rounded-2xl border border-gray-200 p-5 lg:col-span-2">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-semibold text-gray-900">Boards</h2>
+            {% if org.status != 'lapsed' %}
+            <a href="{% url 'padlet:padlet_create' %}"
+               class="flex items-center gap-1.5 text-xs bg-navy text-white px-3 py-1.5 rounded-lg hover:bg-navy-light transition-colors font-medium">
+                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                New Board
+            </a>
+            {% endif %}
+        </div>
+        {% with org_boards=org.boards.all %}
+        {% if org_boards %}
+        <div class="flex flex-col gap-2">
+            {% for board in org_boards %}
+            {% if board.status == 'active' %}
+            <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-900 truncate">{{ board.title }}</p>
+                    <p class="text-xs text-gray-400">{{ board.posts.count }} note{{ board.posts.count|pluralize }} · {{ board.created_at|date:"M d" }}</p>
+                </div>
+                <a href="{% url 'padlet:padlet_board' board.id %}"
+                   class="text-xs border border-gray-200 text-gray-500 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0">
+                    View
+                </a>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-6">
+            <p class="text-sm text-gray-400">No boards yet.</p>
+        </div>
+        {% endif %}
+        {% endwith %}
+        <div class="mt-3 pt-2 border-t border-gray-100">
+            <a href="{% url 'padlet:padlet_list' %}" class="text-xs text-navy font-medium hover:underline">View all boards →</a>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+{% endblock %}

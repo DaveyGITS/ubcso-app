@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% block title %}Review Results — {{ election.title }} — UB-CSO{% endblock %}
+{% block breadcrumb %}Elections / Review Results{% endblock %}
+{% block mobile_title %}Review Results{% endblock %}
+
+{% block content %}
+<!-- Blue glow — fixed to viewport, originates from top-left corner -->
+<div class="fixed top-0 left-0 pointer-events-none" style="
+    z-index: 1;
+    width: 70%;
+    height: 60%;
+    background: radial-gradient(ellipse at 0% 0%, rgba(34, 119, 224, 0.69) 0%, rgba(93,173,226,0.18) 30%, transparent 70%);
+"></div>
+
+<div class="relative" style="z-index: 2;">
+<div class="max-w-2xl mx-auto">
+
+  <div class="mb-6">
+    <a href="{% url 'elections:election_manage' election.id %}" class="text-sm text-gray-500 hover:text-navy transition-colors">← Back to Manage</a>
+    <h1 class="text-xl font-bold text-navy mt-1">Review Results Before Release</h1>
+    <div class="flex items-center gap-2 mt-2">
+      {% if election.organization.logo %}
+        <img src="{{ election.organization.logo.url }}" alt="{{ election.organization.name }}"
+             class="w-8 h-8 rounded-full object-cover flex-shrink-0 border-2 border-gray-200 shadow-sm">
+      {% else %}
+        <div class="w-8 h-8 rounded-full bg-navy flex items-center justify-center flex-shrink-0 shadow-sm">
+          <span class="text-white text-[10px] font-bold">{{ election.organization.name|slice:":2"|upper }}</span>
+        </div>
+      {% endif %}
+      <p class="text-sm font-semibold text-gray-700">{{ election.title }} · {{ election.organization.name }}</p>
+    </div>
+  </div>
+
+  <!-- Participation summary -->
+  <div class="bg-white rounded-xl border border-gray-200 p-5 mb-4">
+    <h2 class="text-sm font-semibold text-gray-700 mb-3">Participation</h2>
+    <div class="flex gap-6">
+      <div>
+        <p class="text-2xl font-bold text-gray-900">{{ total_voters }}</p>
+        <p class="text-xs text-gray-400">Eligible voters</p>
+      </div>
+      <div>
+        <p class="text-2xl font-bold text-navy">{{ total_votes }}</p>
+        <p class="text-xs text-gray-400">Votes cast</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results preview -->
+  <div class="space-y-4 mb-6">
+    {% for position, candidates, is_tied, no_contest in tally_by_position %}
+    <div class="bg-white rounded-xl border {% if is_tied or no_contest %}border-orange border-opacity-50{% else %}border-gray-200{% endif %} p-5">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-semibold text-navy">{{ position.name }}</h2>
+        {% if no_contest %}
+        <span class="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-full">No votes cast</span>
+        {% elif is_tied %}
+        <span class="text-xs bg-orange bg-opacity-10 text-orange px-2 py-1 rounded-full">Tie</span>
+        {% else %}
+        <span class="text-xs bg-green-50 text-green-700 px-2 py-1 rounded-full">Winner determined</span>
+        {% endif %}
+      </div>
+      {% for candidate in candidates %}
+      <div class="flex items-center gap-3 mb-2 last:mb-0">
+        <div class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold
+          {% if is_tied and forloop.counter <= 2 %}bg-orange text-white
+          {% elif forloop.first and not is_tied and not no_contest %}bg-gold text-white
+          {% else %}bg-gray-100 text-gray-500{% endif %}">
+          {% if is_tied and forloop.counter <= 2 %}={% else %}{{ forloop.counter }}{% endif %}
+        </div>
+        {% if candidate.profile_picture %}
+          <img src="{{ candidate.profile_picture }}" class="w-7 h-7 rounded-full object-cover flex-shrink-0">
+        {% else %}
+          <div class="w-7 h-7 rounded-full bg-navy flex items-center justify-center flex-shrink-0">
+            <span class="text-white text-xs">{{ candidate.name|slice:":1" }}</span>
+          </div>
+        {% endif %}
+        <div class="flex-1 min-w-0">
+          <p class="text-sm {% if no_contest %}text-gray-400{% else %}text-gray-800{% endif %}">{{ candidate.name }}</p>
+        </div>
+        <span class="text-xs font-semibold {% if no_contest %}text-gray-400{% else %}text-navy{% endif %}">{{ candidate.count }} vote{{ candidate.count|pluralize }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Release action -->
+  <div class="bg-white rounded-xl border border-gray-200 p-5 mb-4">
+    {% if can_release %}
+    <p class="text-sm text-gray-600 mb-4">Once released, all voters will be notified and results become public to participants.</p>
+    <form method="POST" action="{% url 'elections:election_release' election.id %}">
+      {% csrf_token %}
+      <button type="submit"
+              class="w-full bg-navy text-white py-2.5 rounded-lg text-sm font-medium hover:bg-navy-light transition-colors"
+              onclick="return confirm('Release results to all voters? This cannot be undone.')">
+        Confirm &amp; Release Results
+      </button>
+    </form>
+    {% else %}
+    <div class="flex gap-3 p-3 bg-gray-50 rounded-lg mb-3">
+      <svg class="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <p class="text-sm text-gray-500">No votes were cast in this election. Results cannot be released.</p>
+    </div>
+    <button disabled class="w-full bg-navy text-white py-2.5 rounded-lg text-sm font-medium opacity-40 cursor-not-allowed">
+      Release Results
+    </button>
+    {% endif %}
+  </div>
+
+  <a href="{% url 'elections:election_manage' election.id %}"
+     class="block text-center text-sm text-gray-400 hover:text-gray-600 transition-colors">
+    Go back without releasing
+  </a>
+
+</div><!-- end max-w-2xl -->
+</div><!-- end relative z-2 -->
+{% endblock %}

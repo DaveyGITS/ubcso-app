@@ -1,0 +1,53 @@
+{% load static %}
+{# notification card partial — used by notifications.html #}
+{# Variables: notification, is_new #}
+
+{# ── Badge color styles ───────────────────────────────────────────────────── #}
+<style>
+  .badge-membership       { background:#dbeafe; color:#1d4ed8; }
+  .badge-election         { background:#fce7f3; color:#9d174d; }
+  .badge-election-open    { background:#fce7f3; color:#9d174d; }
+  .badge-election-closed  { background:#f3f4f6; color:#6b7280; }
+  .badge-election-results { background:#d1fae5; color:#065f46; }
+  .badge-report           { background:#d1fae5; color:#065f46; }
+  .badge-organization     { background:#ede9fe; color:#5b21b6; }
+  .badge-system           { background:#fee2e2; color:#991b1b; }
+  .badge-profile          { background:#fef9c3; color:#854d0e; }
+  .badge-noteboard        { background:#e0f2fe; color:#0369a1; }
+  .badge-noteboard-reply    { background:#e0f2fe; color:#0369a1; }
+  .badge-noteboard-reaction { background:#fef9c3; color:#854d0e; }
+  .badge-noteboard-new-post { background:#ede9fe; color:#5b21b6; }
+</style>
+
+{# ── Resolve badge class and label from notification_type ─────────────────── #}
+{% with t=notification.notification_type %}
+{% if t == 'membership' %}
+  {% with badge_class="badge-membership" badge_label="Membership" %}{% include "announcements/_notification_card_inner.html" %}{% endwith %}
+{% elif t == 'election' %}
+  {% with badge_class="badge-election" badge_label="Election" %}{% include "announcements/_notification_card_inner.html" %}{% endwith %}
+{% elif t == 'election:open' %}
+  {% with badge_class="badge-election-open" badge_label="Election — Open" %}{% include "announcements/_notification_card_inner.html" %}{% endwith %}
+{% elif t == 'election:closed' %}
+  {% with badge_class="badge-election-closed" badge_label="Election — Closed" %}{% include "announcements/_notification_card_inner.html" %}{% endwith %}
+{% elif t == 'election:results' %}
+  {% with badge_class="badge-election-results" badge_label="Election — Results" %}{% include "announcements/_notification_card_inner.html" %}{% endwith %}
+{% elif t == 'report' %}
+  {% with badge_class="badge-report" badge_label="Report" %}{% include "announcements/_notification_card_inner.html" %}{% endwith %}
+{% elif t == 'organization' %}
+  {% with badge_class="badge-organization" badge_label="Organization" %}{% include "announcements/_notification_card_inner.html" %}{% endwith %}
+{% elif t == 'system' %}
+  {% with badge_class="badge-system" badge_label="System" %}{% include "announcements/_notification_card_inner.html" %}{% endwith %}
+{% elif t == 'profile' %}
+  {% with badge_class="badge-profile" badge_label="Profile" %}{% include "announcements/_notification_card_inner.html" %}{% endwith %}
+{% elif t == 'noteboard' %}
+  {% with badge_class="badge-noteboard" badge_label="Noteboard" %}{% include "announcements/_notification_card_inner.html" %}{% endwith %}
+{% elif t == 'noteboard:reply' %}
+  {% with badge_class="badge-noteboard-reply" badge_label="Noteboard — Reply" %}{% include "announcements/_notification_card_inner.html" %}{% endwith %}
+{% elif t == 'noteboard:reaction' %}
+  {% with badge_class="badge-noteboard-reaction" badge_label="Noteboard — Reaction" %}{% include "announcements/_notification_card_inner.html" %}{% endwith %}
+{% elif t == 'noteboard:new_post' %}
+  {% with badge_class="badge-noteboard-new-post" badge_label="Noteboard — New Note" %}{% include "announcements/_notification_card_inner.html" %}{% endwith %}
+{% else %}
+  {% with badge_class="" badge_label="" %}{% include "announcements/_notification_card_inner.html" %}{% endwith %}
+{% endif %}
+{% endwith %}

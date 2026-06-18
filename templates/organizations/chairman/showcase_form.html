@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% block title %}Set Showcase — {{ org.name }}{% endblock %}
+{% block breadcrumb %}{{ org.name }} / Set Showcase{% endblock %}
+{% block mobile_title %}Set Showcase{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+
+  <div class="flex items-center gap-3 mb-6">
+    <a href="{% url 'organizations:org_profile' org_id=org.id %}" class="text-gray-400 hover:text-gray-600 transition-colors">
+      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+    </a>
+    <div>
+      <h1 class="text-xl font-semibold text-gray-900">Set Showcase</h1>
+      <p class="text-sm text-gray-400 mt-0.5">{{ org.name }}</p>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="mb-4 px-4 py-3 rounded-xl text-sm {% if message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-green-50 text-green-700 border border-green-200{% endif %}">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="bg-white rounded-2xl border border-gray-200 p-6 mb-4">
+    <form method="post" enctype="multipart/form-data" action="{% url 'organizations:showcase_set' org_id=org.id %}">
+      {% csrf_token %}
+
+      <!-- Type selector -->
+      <div class="mb-5">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Showcase Type</label>
+        <div class="flex gap-4">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="radio" name="type" value="image" id="type-image" class="accent-navy"
+                   {% if not showcase or showcase.is_image %}checked{% endif %}>
+            <span class="text-sm text-gray-700">Image</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="radio" name="type" value="video" id="type-video" class="accent-navy"
+                   {% if showcase and showcase.is_video %}checked{% endif %}>
+            <span class="text-sm text-gray-700">Video</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Image upload -->
+      <div id="image-selector" class="mb-5">
+        <label class="block text-sm font-medium text-gray-700 mb-1.5">
+          Upload Image
+          {% if not showcase or not showcase.is_image %}<span class="text-red-500">*</span>{% else %}<span class="text-gray-400 font-normal text-xs">(leave blank to keep current)</span>{% endif %}
+        </label>
+        <input type="file" name="showcase_image" id="showcase-image-input" accept=".jpg,.jpeg,.png,.webp"
+               class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-navy file:text-white hover:file:bg-opacity-90 cursor-pointer">
+        <p class="text-xs text-gray-400 mt-1.5">JPEG, PNG, or WebP · Max 10 MB · Displayed as a full-width banner</p>
+        <!-- Image preview -->
+        <img id="image-preview" class="hidden mt-3 w-full rounded-xl border border-gray-200 object-cover" style="max-height:200px;" alt="Preview">
+        {% if showcase and showcase.is_image %}
+        <div class="mt-2">
+          <p class="text-xs text-gray-400 mb-1">Current showcase image:</p>
+          <img src="{{ showcase.image.url }}" class="w-full h-24 object-cover rounded-lg border border-gray-200">
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Video upload -->
+      <div id="video-selector" class="mb-5 hidden">
+        <label class="block text-sm font-medium text-gray-700 mb-1.5">
+          Upload Video
+          {% if not showcase or not showcase.is_video %}<span class="text-red-500">*</span>{% else %}<span class="text-gray-400 font-normal text-xs">(leave blank to keep current)</span>{% endif %}
+        </label>
+        <input type="file" name="showcase_video" id="showcase-video-input" accept=".mp4,.mov,.webm"
+               class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-navy file:text-white hover:file:bg-opacity-90 cursor-pointer">
+        <p class="text-xs text-gray-400 mt-1.5">MP4, MOV, or WebM · Max 500 MB · Autoplays muted and looped</p>
+        <!-- Video preview -->
+        <video id="video-preview" class="hidden mt-3 w-full rounded-xl border border-gray-200" style="max-height:200px;" muted playsinline></video>
+        {% if showcase and showcase.is_video %}
+        <div class="mt-2 text-xs text-gray-400">Current showcase video is set.</div>
+        {% endif %}
+      </div>
+
+      <!-- Accent color -->
+      <div class="mb-5">
+        <label class="block text-sm font-medium text-gray-700 mb-1.5">Description <span class="text-red-500">*</span></label>
+        <textarea name="description" id="description-input" rows="2" required maxlength="50"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-navy resize-none"
+                  placeholder="Short caption shown on hover (max 50 chars)">{% if showcase and showcase.description %}{{ showcase.description }}{% endif %}</textarea>
+        <p class="text-xs text-gray-400 mt-1.5">Max 50 characters · Displayed when users hover over the showcase</p>
+      </div>
+
+      <!-- Accent color -->
+      <div class="mb-5">
+        <label class="block text-sm font-medium text-gray-700 mb-1.5">Accent Color <span class="text-gray-400 font-normal">(optional)</span></label>
+        <div class="flex items-center gap-3">
+          <input type="color" id="accent-color-picker"
+                 value="{% if showcase and showcase.accent_color %}{{ showcase.accent_color }}{% else %}#1B2A7B{% endif %}"
+                 class="w-10 h-10 rounded-lg border border-gray-200 cursor-pointer p-0.5">
+          <input type="text" name="accent_color" id="accent-color-text"
+                 value="{% if showcase and showcase.accent_color %}{{ showcase.accent_color }}{% else %}{% endif %}"
+                 maxlength="7" placeholder="#RRGGBB (leave blank for none)"
+                 class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-navy">
+        </div>
+        <p class="text-xs text-gray-400 mt-1.5">Applied to the bottom quarter of the showcase with fading edges</p>
+      </div>
+
+      <button type="submit"
+              class="px-5 py-2 bg-navy text-white text-sm font-medium rounded-lg hover:bg-opacity-90 transition-colors">
+        Set Showcase
+      </button>
+    </form>
+  </div>
+
+  {% if showcase %}
+  <div class="bg-white rounded-2xl border border-gray-200 p-6">
+    <h2 class="text-sm font-semibold text-gray-900 mb-1">Current Showcase</h2>
+    <p class="text-xs text-gray-400 mb-4">
+      {% if showcase.is_image %}Image showcase{% elif showcase.is_video %}Video: {{ showcase.video_post.title }}{% endif %}
+      {% if showcase.accent_color %} · Accent: <span class="font-mono">{{ showcase.accent_color }}</span>{% endif %}
+    </p>
+    <form method="post" action="{% url 'organizations:showcase_clear' org_id=org.id %}">
+      {% csrf_token %}
+      <button type="button" id="clear-showcase-btn"
+              class="px-4 py-2 border border-red-200 text-red-600 text-xs font-medium rounded-lg hover:bg-red-50 transition-colors">
+        Clear Showcase
+      </button>
+      <button type="submit" id="clear-showcase-submit" class="hidden"></button>
+    </form>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+  const typeImage = document.getElementById('type-image');
+  const typeVideo = document.getElementById('type-video');
+  const imageSel = document.getElementById('image-selector');
+  const videoSel = document.getElementById('video-selector');
+
+  function updateSelectors() {
+    imageSel.classList.toggle('hidden', !typeImage.checked);
+    videoSel.classList.toggle('hidden', typeImage.checked);
+  }
+  typeImage.addEventListener('change', updateSelectors);
+  typeVideo.addEventListener('change', updateSelectors);
+  updateSelectors();
+
+  // Image preview
+  const imageInput = document.getElementById('showcase-image-input');
+  const imagePreview = document.getElementById('image-preview');
+  imageInput.addEventListener('change', function () {
+    const file = imageInput.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => { imagePreview.src = e.target.result; imagePreview.classList.remove('hidden'); };
+    reader.readAsDataURL(file);
+  });
+
+  // Video preview
+  const videoInput = document.getElementById('showcase-video-input');
+  const videoPreview = document.getElementById('video-preview');
+  videoInput.addEventListener('change', function () {
+    const file = videoInput.files[0];
+    if (!file) return;
+    videoPreview.src = URL.createObjectURL(file);
+    videoPreview.classList.remove('hidden');
+    videoPreview.load();
+  });
+
+  // Sync color picker ↔ text
+  const picker = document.getElementById('accent-color-picker');
+  const textInput = document.getElementById('accent-color-text');
+  picker.addEventListener('input', () => { textInput.value = picker.value; });
+  textInput.addEventListener('input', () => {
+    if (/^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})$/.test(textInput.value)) {
+      picker.value = textInput.value;
+    }
+  });
+
+  // Clear showcase with custom confirm
+  const clearBtn = document.getElementById('clear-showcase-btn');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', async function () {
+      try {
+        await window.showConfirm('Remove the current showcase from the org profile?', 'Clear Showcase?');
+        document.getElementById('clear-showcase-submit').click();
+      } catch (_) {}
+    });
+  }
+</script>
+{% endblock %}

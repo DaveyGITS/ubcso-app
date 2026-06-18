@@ -1,0 +1,233 @@
+{% for position, candidates, is_tied in tally_by_position %}
+
+  <!-- Position name centered -->
+  <div class="text-center mb-6 mt-3">
+    <p class="position-label">Position</p>
+    <h2 class="position-title">{{ position.name }}</h2>
+    {% if is_tied %}
+    <span class="inline-block text-sm px-3 py-0.5 rounded-full font-medium mt-1"
+          style="background: rgba(234,88,12,0.1); color: #c2410c; border: 1px solid rgba(234,88,12,0.25);">Tie</span>
+    {% endif %}
+  </div>
+
+  <!-- Candidates — 2-per-row grid, landscape card -->
+  <div class="live-candidates-grid mb-8">
+    {% for candidate in candidates %}
+
+    {% if forloop.first and not is_tied and candidate.count > 0 %}
+      <div class="live-cand-wrap">
+        <div class="live-cand-card">
+          <div class="live-cand-avatar" style="border-color: #ffffff; background: linear-gradient(135deg, #0044cc, #0066ff);">
+            {% if candidate.profile_picture %}
+              <img src="{{ candidate.profile_picture }}" alt="{{ candidate.name }}" class="w-full h-full rounded-full object-cover">
+            {% else %}
+              <span class="live-cand-initial">{{ candidate.name|slice:":1" }}</span>
+            {% endif %}
+          </div>
+          <div class="live-cand-rect" style="background: linear-gradient(135deg, #0066ff 0%, #0033cc 100%); border-color: #0055ee; box-shadow: 0 4px 24px rgba(0,102,255,0.45);">
+            <div class="live-cand-name-block">
+              <span class="live-cand-surname live-cand-surname--white" data-fullname="{{ candidate.name|upper }}"></span>
+              <span class="live-cand-firstname live-cand-firstname--white"></span>
+            </div>
+            <div class="live-cand-count">
+              <span class="live-cand-num" style="color: #ffffff;">{{ candidate.count }}</span>
+              <span class="live-cand-unit live-cand-unit--white">vote{{ candidate.count|pluralize }}</span>
+            </div>
+            <div class="live-cand-bar-bg live-cand-bar-bg--royal">
+              {% if candidate.count > 0 %}
+              <div class="live-cand-bar-fill" style="width: {{ candidate.count|default:0 }}0%; background: rgba(255,255,255,0.7);"></div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+    {% elif is_tied and forloop.counter <= 2 %}
+      <div class="live-cand-wrap">
+        <div class="live-cand-card">
+          <div class="live-cand-avatar" style="border-color: #ffffff; background: linear-gradient(135deg, #0044cc, #0066ff);">
+            {% if candidate.profile_picture %}
+              <img src="{{ candidate.profile_picture }}" alt="{{ candidate.name }}" class="w-full h-full rounded-full object-cover">
+            {% else %}
+              <span class="live-cand-initial">{{ candidate.name|slice:":1" }}</span>
+            {% endif %}
+          </div>
+          <div class="live-cand-rect" style="background: linear-gradient(135deg, #0066ff 0%, #0033cc 100%); border-color: #0055ee; box-shadow: 0 4px 24px rgba(0,102,255,0.45);">
+            <div class="live-cand-name-block">
+              <span class="live-cand-surname live-cand-surname--white" data-fullname="{{ candidate.name|upper }}"></span>
+              <span class="live-cand-firstname live-cand-firstname--white"></span>
+            </div>
+            <div class="live-cand-count">
+              <span class="live-cand-num" style="color: #ffffff;">{{ candidate.count }}</span>
+              <span class="live-cand-unit live-cand-unit--white">vote{{ candidate.count|pluralize }}</span>
+            </div>
+            <div class="live-cand-bar-bg live-cand-bar-bg--royal">
+              {% if candidate.count > 0 %}
+              <div class="live-cand-bar-fill" style="width: {{ candidate.count|default:0 }}0%; background: rgba(255,255,255,0.7);"></div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+    {% else %}
+      <div class="live-cand-wrap">
+        <div class="live-cand-card">
+          <div class="live-cand-avatar" style="border-color: #ffffff; background: linear-gradient(135deg, #0044cc, #0066ff);">
+            {% if candidate.profile_picture %}
+              <img src="{{ candidate.profile_picture }}" alt="{{ candidate.name }}" class="w-full h-full rounded-full object-cover">
+            {% else %}
+              <span class="live-cand-initial">{{ candidate.name|slice:":1" }}</span>
+            {% endif %}
+          </div>
+          <div class="live-cand-rect" style="background: linear-gradient(135deg, #0066ff 0%, #0033cc 100%); border-color: #0055ee; box-shadow: 0 4px 24px rgba(0,102,255,0.45);">
+            <div class="live-cand-name-block">
+              <span class="live-cand-surname live-cand-surname--white" data-fullname="{{ candidate.name|upper }}"></span>
+              <span class="live-cand-firstname live-cand-firstname--white"></span>
+            </div>
+            <div class="live-cand-count">
+              <span class="live-cand-num" style="color: #ffffff;">{{ candidate.count }}</span>
+              <span class="live-cand-unit live-cand-unit--white">vote{{ candidate.count|pluralize }}</span>
+            </div>
+            <div class="live-cand-bar-bg live-cand-bar-bg--royal">
+              {% if candidate.count > 0 %}
+              <div class="live-cand-bar-fill" style="width: {{ candidate.count|default:0 }}0%; background: rgba(255,255,255,0.7);"></div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    {% empty %}
+    <p class="text-sm text-center col-span-2" style="color: rgba(27,42,123,0.4);">No candidates yet.</p>
+    {% endfor %}
+  </div>
+
+  {% if not forloop.last %}<hr style="border-color: rgba(27,42,123,0.1);" class="mb-6">{% endif %}
+
+{% empty %}
+<p class="text-sm text-center py-4" style="color: rgba(27,42,123,0.4);">No positions.</p>
+{% endfor %}
+
+<script>
+// Split "FIRST LAST" → surname = last word, firstname = everything before
+document.querySelectorAll('.live-cand-surname').forEach(function(el) {
+    var full = el.dataset.fullname || '';
+    var parts = full.trim().split(' ');
+    var surname = parts[parts.length - 1];
+    var firstname = parts.slice(0, parts.length - 1).join(' ');
+    el.textContent = surname + ',';
+    var fnEl = el.nextElementSibling;
+    if (fnEl) fnEl.textContent = firstname;
+});
+</script>
+
+<style>
+.live-candidates-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; justify-items: center; }
+/* If only 1 candidate, center it by making it span both columns */
+.live-cand-wrap:only-child { grid-column: 1 / -1; max-width: 50%; width: 100%; }
+.live-cand-wrap { display: flex; flex-direction: column; width: 100%; }
+@media (max-width: 640px) { .live-candidates-grid { gap: 0.6rem; } }
+
+/* Card: circle absolutely positioned, rectangle fills height */
+.live-cand-card { position: relative; display: flex; align-items: stretch; min-height: 160px; }
+
+/* Circle — stays at top-left, vertically centered on the rectangle */
+.live-cand-avatar {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 3px solid;
+    flex-shrink: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+@media (max-width: 640px) { .live-cand-avatar { width: 80px; height: 80px; } }
+
+.live-cand-initial { color: white !important; font-size: 2rem; font-weight: 700; }
+@media (max-width: 640px) { .live-cand-initial { font-size: 1.25rem; } }
+
+/* Rectangle — stretches full height of card */
+.live-cand-rect {
+    flex: 1;
+    border-radius: 16px;
+    border: 2px solid;
+    padding: 1.25rem 1rem 1.25rem 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-left: 60px;
+    padding-left: 72px;
+}
+@media (max-width: 640px) {
+    .live-cand-rect {
+        margin-left: 40px;
+        padding-left: 48px;
+        border-radius: 12px;
+        padding-top: 0.75rem;
+        padding-bottom: 0.75rem;
+        padding-right: 0.6rem;
+    }
+}
+
+/* Name block */
+.live-cand-name-block { display: flex; flex-direction: column; line-height: 1.1; }
+
+/* Surname — xl, bold, uppercase */
+.live-cand-surname {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: white !important;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.live-cand-surname--dark {
+    color: #1B2A7B !important;
+}
+.live-cand-surname--white {
+    color: #ffffff !important;
+}
+@media (max-width: 640px) { .live-cand-surname, .live-cand-surname--dark, .live-cand-surname--white { font-size: 0.95rem; } }
+
+/* First name — base, slightly smaller, uppercase */
+.live-cand-firstname {
+    font-size: 1rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.65) !important;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.live-cand-firstname--dark {
+    color: rgba(27,42,123,0.6) !important;
+}
+.live-cand-firstname--white {
+    color: rgba(255,255,255,0.75) !important;
+}
+@media (max-width: 640px) { .live-cand-firstname, .live-cand-firstname--dark, .live-cand-firstname--white { font-size: 0.78rem; } }
+
+.live-cand-count { display: flex; align-items: flex-end; gap: 0.25rem; }
+.live-cand-num { font-size: 2rem; font-weight: 700; line-height: 1; }
+@media (max-width: 640px) { .live-cand-num { font-size: 1.4rem; } }
+.live-cand-unit { font-size: 0.75rem; color: rgba(255,255,255,0.35); margin-bottom: 2px; }
+.live-cand-unit--dark { color: rgba(27,42,123,0.4) !important; }
+.live-cand-unit--white { color: rgba(255,255,255,0.6) !important; }
+.live-cand-bar-bg { width: 100%; background: rgba(255,255,255,0.1); border-radius: 999px; height: 6px; }
+.live-cand-bar-bg--light { background: rgba(27,42,123,0.08) !important; }
+.live-cand-bar-bg--royal { background: rgba(255,255,255,0.2) !important; }
+.live-cand-bar-fill { height: 6px; border-radius: 999px; transition: width 0.4s ease; }
+</style>

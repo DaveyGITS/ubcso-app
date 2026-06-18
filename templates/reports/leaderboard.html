@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Leaderboard — UB-CSO{% endblock %}
+{% block breadcrumb %}Leaderboard{% endblock %}
+{% block mobile_title %}Leaderboard{% endblock %}
+
+{% block extra_css %}
+<style>
+.podium-gold   { background:linear-gradient(160deg,#fef3c7 0%,#fde68a 60%,#fbbf24 100%); border:2px solid #f59e0b; box-shadow:0 8px 32px rgba(245,158,11,0.4); transition:transform 0.2s ease, box-shadow 0.2s ease; }
+.podium-gold:hover   { transform:translateY(-6px) scale(1.03); box-shadow:0 20px 48px rgba(245,158,11,0.55); }
+.podium-silver { background:#f9fafb; border:1.5px solid #d1d5db; transition:transform 0.2s ease, box-shadow 0.2s ease; }
+.podium-silver:hover { transform:translateY(-4px) scale(1.02); box-shadow:0 12px 32px rgba(156,163,175,0.4); }
+.podium-bronze { background:#fff7f3; border:1.5px solid #fed7aa; transition:transform 0.2s ease, box-shadow 0.2s ease; }
+.podium-bronze:hover { transform:translateY(-4px) scale(1.02); box-shadow:0 12px 32px rgba(217,119,6,0.3); }
+.rank-gold   { background:#f59e0b; color:#fff; }
+.rank-silver { background:#9ca3af; color:#fff; }
+.rank-bronze { background:#d97706; color:#fff; }
+.score-track { background:#f3f4f6; border-radius:9999px; height:5px; width:100%; overflow:hidden; }
+.score-bar-gold   { background:#f59e0b; height:5px; }
+.score-bar-silver { background:#9ca3af; height:5px; }
+.score-bar-bronze { background:#d97706; height:5px; }
+.score-bar-rest   { background:#1B2A7B; height:5px; opacity:0.35; }
+.period-active { background:#f59e0b !important; color:#fff !important; border-color:#f59e0b !important; }
+.rank-scroll::-webkit-scrollbar { width: 4px; }
+.rank-scroll::-webkit-scrollbar-track { background: transparent; }
+.rank-scroll::-webkit-scrollbar-thumb { background: #fde68a; border-radius: 2px; }
+
+/* Mobile: scale down podium to fit 3 cols on narrow screens */
+@media (max-width: 480px) {
+    .podium-grid { gap: 0.4rem; }
+    .podium-grid a { padding: 0.6rem 0.4rem !important; }
+    .podium-grid img, .podium-grid .w-20 { width: 2.5rem !important; height: 2.5rem !important; }
+    .podium-grid img, .podium-grid .w-14 { width: 2rem !important; height: 2rem !important; }
+    .podium-grid img, .podium-grid .w-12 { width: 1.75rem !important; height: 1.75rem !important; }
+    .podium-grid p.text-3xl { font-size: 1.1rem !important; }
+    .podium-grid p.text-xl  { font-size: 0.9rem !important; }
+    .podium-grid p.text-lg  { font-size: 0.85rem !important; }
+    .podium-grid p.text-sm, .podium-grid p.text-xs { font-size: 0.6rem !important; }
+    .podium-grid [style*="min-height:240"] { min-height: 140px !important; }
+    .podium-grid [style*="min-height:180"] { min-height: 110px !important; }
+    .podium-grid [style*="min-height:150"] { min-height: 90px !important; }
+    .podium-grid .w-8.h-8 { width: 1.25rem !important; height: 1.25rem !important; font-size: 0.55rem !important; }
+    .podium-grid .w-9.h-9 { width: 1.4rem !important; height: 1.4rem !important; font-size: 0.6rem !important; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Gold glow -->
+<div class="fixed top-0 left-0 pointer-events-none" style="z-index:1;width:70%;height:60%;background:radial-gradient(ellipse at 0% 0%,rgba(245,158,11,0.55) 0%,rgba(251,191,36,0.18) 30%,transparent 70%);"></div>
+
+<div class="relative max-w-2xl mx-auto" style="z-index:2;">
+
+    <div class="mb-5">
+        <h1 class="text-xl font-semibold text-gray-900">Leaderboard</h1>
+        <p class="text-sm text-gray-400 mt-0.5">Ranked by approved accomplishment reports</p>
+    </div>
+
+    <!-- Period filter -->
+    <div class="bg-white rounded-2xl border border-gray-200 p-3 mb-5">
+        <div class="flex flex-wrap gap-2">
+            <a href="?period=current" class="px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors {% if period_filter == 'current' %}period-active{% endif %}">Current Semester</a>
+            <a href="?period=all"     class="px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors {% if period_filter == 'all' %}period-active{% endif %}">All Time</a>
+            {% for period in periods %}
+            <a href="?period={{ period.id }}" class="px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors {% if period_filter == period.id|stringformat:'s' %}period-active{% endif %}">{{ period.name }}</a>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if ranked %}
+
+    <!-- Top 3 Podium -->
+    {% if ranked|length >= 1 %}
+    <div class="grid grid-cols-3 gap-3 mb-6 items-end podium-grid">
+
+        <!-- 2nd -->
+        {% if ranked|length >= 2 %}
+        <a href="{% url 'organizations:org_profile' ranked.1.org.id %}"
+           class="{% if ranked.1.rank == 1 %}podium-gold{% else %}podium-silver{% endif %} rounded-2xl p-4 text-center flex flex-col items-center justify-end"
+           style="min-height:180px;">
+            <div class="{% if ranked.1.rank == 1 %}rank-gold{% else %}rank-silver{% endif %} w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold mb-3">#{{ ranked.1.rank }}</div>
+            {% if ranked.1.org.logo %}
+            <img src="{{ ranked.1.org.logo.url }}" alt="" class="w-14 h-14 rounded-full object-cover mb-2 {% if ranked.1.rank == 1 %}ring-2 ring-yellow-400{% else %}ring-2 ring-gray-300{% endif %}">
+            {% else %}
+            <div class="w-14 h-14 rounded-full flex items-center justify-center mb-2 {% if ranked.1.rank == 1 %}ring-2 ring-yellow-400{% else %}bg-gray-200 ring-2 ring-gray-300{% endif %}">
+                <span class="{% if ranked.1.rank == 1 %}text-yellow-700{% else %}text-gray-600{% endif %} text-sm font-bold">{{ ranked.1.org.name|slice:":2"|upper }}</span>
+            </div>
+            {% endif %}
+            <p class="text-xs font-semibold text-gray-900 w-full truncate">{{ ranked.1.org.name|truncatechars:18 }}</p>
+            <p class="text-xl font-bold {% if ranked.1.rank == 1 %}text-yellow-500{% else %}text-gray-500{% endif %} mt-1">{{ ranked.1.report_count }}</p>
+            <p class="text-xs {% if ranked.1.rank == 1 %}text-yellow-700{% else %}text-gray-400{% endif %}">reports</p>
+        </a>
+        {% else %}<div></div>{% endif %}
+
+        <!-- 1st -->
+        <a href="{% url 'organizations:org_profile' ranked.0.org.id %}"
+           class="podium-gold rounded-2xl p-4 text-center flex flex-col items-center justify-end"
+           style="min-height:240px;">
+            <svg class="w-6 h-6 mb-2" style="color:#f59e0b;" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M2 19l2-8 4 4 4-8 4 8 4-4 2 8H2z"/>
+            </svg>
+            <div class="rank-gold w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold mb-3">#1</div>
+            {% if ranked.0.org.logo %}
+            <img src="{{ ranked.0.org.logo.url }}" alt="" class="w-20 h-20 rounded-full object-cover mb-2" style="box-shadow:0 0 0 3px #f59e0b;">
+            {% else %}
+            <div class="w-20 h-20 rounded-full flex items-center justify-center mb-2" style="background:#fef3c7;box-shadow:0 0 0 3px #f59e0b;">
+                <span class="text-yellow-700 text-lg font-bold">{{ ranked.0.org.name|slice:":2"|upper }}</span>
+            </div>
+            {% endif %}
+            <p class="text-sm font-bold text-gray-900 w-full truncate">{{ ranked.0.org.name|truncatechars:18 }}</p>
+            <p class="text-3xl font-black mt-1" style="color:#d97706;">{{ ranked.0.report_count }}</p>
+            <p class="text-xs text-yellow-700 font-medium">reports</p>
+        </a>
+
+        <!-- 3rd -->
+        {% if ranked|length >= 3 %}
+        <a href="{% url 'organizations:org_profile' ranked.2.org.id %}"
+           class="{% if ranked.2.rank == 1 %}podium-gold{% elif ranked.2.rank == 2 %}podium-silver{% else %}podium-bronze{% endif %} rounded-2xl p-4 text-center flex flex-col items-center justify-end"
+           style="min-height:150px;">
+            <div class="{% if ranked.2.rank == 1 %}rank-gold{% elif ranked.2.rank == 2 %}rank-silver{% else %}rank-bronze{% endif %} w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold mb-3">#{{ ranked.2.rank }}</div>
+            {% if ranked.2.org.logo %}
+            <img src="{{ ranked.2.org.logo.url }}" alt="" class="w-12 h-12 rounded-full object-cover mb-2" style="box-shadow:0 0 0 2px {% if ranked.2.rank == 1 %}#f59e0b{% elif ranked.2.rank == 2 %}#9ca3af{% else %}#d97706{% endif %};">
+            {% else %}
+            <div class="w-12 h-12 rounded-full flex items-center justify-center mb-2" style="background:#fef3c7;box-shadow:0 0 0 2px {% if ranked.2.rank == 1 %}#f59e0b{% elif ranked.2.rank == 2 %}#9ca3af{% else %}#d97706{% endif %};">
+                <span class="{% if ranked.2.rank == 1 %}text-yellow-700{% elif ranked.2.rank == 2 %}text-gray-500{% else %}text-yellow-700{% endif %} text-xs font-bold">{{ ranked.2.org.name|slice:":2"|upper }}</span>
+            </div>
+            {% endif %}
+            <p class="text-xs font-semibold text-gray-900 w-full truncate">{{ ranked.2.org.name|truncatechars:18 }}</p>
+            <p class="text-lg font-bold mt-1 {% if ranked.2.rank == 1 %}text-yellow-500{% elif ranked.2.rank == 2 %}text-gray-400{% else %}text-yellow-700{% endif %}">{{ ranked.2.report_count }}</p>
+            <p class="text-xs text-gray-400">reports</p>
+        </a>
+        {% else %}<div></div>{% endif %}
+
+    </div>
+    {% endif %}
+
+    <!-- All Rankings -->
+    <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <p class="text-sm font-semibold text-gray-700">All Rankings</p>
+            <p class="text-xs text-gray-400">{{ ranked|length }} org{{ ranked|length|pluralize }}</p>
+        </div>
+        <div class="rank-scroll" style="overflow-y:auto;max-height:360px;scrollbar-width:thin;scrollbar-color:#fde68a transparent;">
+        {% with max_score=ranked.0.report_count %}
+        {% for entry in ranked %}
+        <a href="{% url 'organizations:org_profile' entry.org.id %}"
+           class="flex items-center gap-4 px-5 py-3 border-b border-gray-50 last:border-b-0 hover:bg-amber-50 transition-colors group"
+           {% if entry.rank == 1 %}style="background:#fffbeb;border-left:3px solid #f59e0b;"{% endif %}>
+            <div class="w-8 flex-shrink-0 flex justify-center">
+                {% if entry.rank == 1 %}<span class="rank-gold w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold">#1</span>
+                {% elif entry.rank == 2 %}<span class="rank-silver w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold">#2</span>
+                {% elif entry.rank == 3 %}<span class="rank-bronze w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold">#3</span>
+                {% else %}<span class="text-sm font-semibold text-gray-400">#{{ entry.rank }}</span>{% endif %}
+            </div>
+            {% if entry.org.logo %}
+            <img src="{{ entry.org.logo.url }}" alt="" class="w-9 h-9 rounded-full object-cover flex-shrink-0">
+            {% else %}
+            <div class="w-9 h-9 rounded-full bg-navy bg-opacity-10 flex items-center justify-center flex-shrink-0">
+                <span class="text-navy text-xs font-bold">{{ entry.org.name|slice:":2"|upper }}</span>
+            </div>
+            {% endif %}
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <p class="text-sm font-semibold text-gray-900 truncate group-hover:text-navy transition-colors">{{ entry.org.name }}</p>
+                    {% if entry.org.status_badge %}
+                    <span class="text-xs px-1.5 py-0.5 rounded-full font-medium flex-shrink-0
+                        {% if entry.org.status_badge == 'Probationary' %}bg-yellow-100 text-yellow-700
+                        {% elif entry.org.status_badge == 'Institutional' %}bg-blue-100 text-blue-700{% endif %}">
+                        {{ entry.org.status_badge }}
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="score-track mt-1">
+                    {% if max_score > 0 %}
+                    <div class="{% if entry.rank == 1 %}score-bar-gold{% elif entry.rank == 2 %}score-bar-silver{% elif entry.rank == 3 %}score-bar-bronze{% else %}score-bar-rest{% endif %}" style="width:{% widthratio entry.report_count max_score 100 %}%;"></div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="text-right flex-shrink-0">
+                <p class="text-base font-bold {% if entry.rank == 1 %}text-yellow-500{% elif entry.rank == 2 %}text-gray-400{% elif entry.rank == 3 %}text-yellow-700{% else %}text-navy{% endif %}">{{ entry.report_count }}</p>
+                <p class="text-xs text-gray-400">reports</p>
+            </div>
+        </a>
+        {% endfor %}
+        {% endwith %}
+        </div>
+    </div>
+
+    {% else %}
+    <div class="text-center py-20">
+        <svg class="w-16 h-16 text-gray-200 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+        <h2 class="text-gray-400 font-medium mb-1">No reports yet</h2>
+        <p class="text-gray-300 text-sm">Rankings will appear once reports are approved</p>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

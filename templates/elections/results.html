@@ -1,0 +1,488 @@
+{% extends 'base.html' %}
+{% block title %}Results — {{ election.title }} — UB-CSO{% endblock %}
+{% block breadcrumb %}Elections / Results{% endblock %}
+{% block mobile_title %}Election Results{% endblock %}
+
+{% block extra_css %}
+<style>
+#main-content {
+    background: linear-gradient(160deg, #e8f4fd 0%, #dbeafe 50%, #bfdbfe 100%) !important;
+    min-height: 100vh;
+}
+.res-glow-1 { position:fixed; top:-10%; left:-5%; width:55vw; height:55vh; background:radial-gradient(ellipse,rgba(147,197,253,0.55) 0%,transparent 70%); pointer-events:none; z-index:0; }
+.res-glow-2 { position:fixed; bottom:-10%; right:-5%; width:45vw; height:45vh; background:radial-gradient(ellipse,rgba(191,219,254,0.6) 0%,transparent 70%); pointer-events:none; z-index:0; }
+.res-org-banner { width:100%; height:200px; background-size:cover; background-position:center; border-radius:0 0 20px 20px; margin-bottom:1.5rem; position:relative; z-index:2; box-shadow:0 4px 20px rgba(27,42,123,0.15); overflow:hidden; }
+.res-org-banner--fallback { background:linear-gradient(135deg,#1B2A7B 0%,#2563eb 100%); }
+.res-banner-overlay { position:absolute; inset:0; background:linear-gradient(to right,rgba(27,42,123,0.88) 0%,rgba(27,42,123,0.75) 40%,rgba(27,42,123,0.3) 65%,transparent 100%); display:flex; align-items:center; padding:1.5rem 2rem; }
+.res-banner-blur { position:absolute; inset:0; width:60%; backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); mask-image:linear-gradient(to right,black 50%,transparent 100%); -webkit-mask-image:linear-gradient(to right,black 50%,transparent 100%); pointer-events:none; }
+.res-banner-content { position:relative; z-index:3; display:flex; flex-direction:column; gap:0.35rem; max-width:70%; }
+.res-banner-back { font-size:0.75rem; color:rgba(255,255,255,0.6); text-decoration:none; display:inline-flex; align-items:center; gap:0.3rem; margin-bottom:0.25rem; transition:color 0.15s ease; }
+.res-banner-back:hover { color:rgba(255,255,255,0.95); }
+.res-banner-title { font-size:1.3rem; font-weight:800; color:#ffffff; line-height:1.2; text-shadow:0 1px 4px rgba(0,0,0,0.4); }
+.res-banner-org { display:flex; align-items:center; gap:0.5rem; margin-top:0.2rem; }
+.res-banner-org-name { font-size:1.05rem; font-weight:700; color:rgba(255,255,255,0.9); }
+@media(max-width:640px){ .res-org-banner{height:150px;border-radius:0 0 14px 14px;} .res-banner-overlay{padding:1rem 1.25rem;} .res-banner-content{max-width:85%;} .res-banner-title{font-size:1rem;} }
+.res-position-label { font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.15em; color:#2563eb !important; margin-bottom:0.25rem; }
+.res-position-title { font-size:1.5rem; font-weight:800; color:#1B2A7B !important; text-transform:uppercase; letter-spacing:0.04em; }
+.res-position-card { background:rgba(255,255,255,0.75); border:1px solid rgba(27,42,123,0.1); border-radius:20px; padding:1.75rem; backdrop-filter:blur(12px); box-shadow:0 4px 24px rgba(27,42,123,0.08); }
+.res-candidates-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:1rem; justify-items:center; }
+.res-cand-wrap:only-child { grid-column:1/-1; max-width:50%; width:100%; }
+.res-cand-wrap { display:flex; flex-direction:column; width:100%; }
+@media(max-width:640px){ .res-candidates-grid{gap:0.6rem;} }
+.res-cand-card { position:relative; display:flex; align-items:stretch; min-height:160px; }
+.res-cand-avatar { position:absolute; left:0; top:50%; transform:translateY(-50%); width:120px; height:120px; border-radius:50%; border:3px solid; flex-shrink:0; z-index:10; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+@media(max-width:640px){ .res-cand-avatar{width:80px;height:80px;} }
+.res-cand-initial { color:white !important; font-size:2rem; font-weight:700; }
+@media(max-width:640px){ .res-cand-initial{font-size:1.25rem;} }
+.res-cand-rect { flex:1; border-radius:16px; border:2px solid; padding:1.25rem 1rem 1.25rem 0; display:flex; flex-direction:column; justify-content:center; gap:0.5rem; margin-left:60px; padding-left:72px; }
+@media(max-width:640px){ .res-cand-rect{margin-left:40px;padding-left:48px;border-radius:12px;padding-top:0.75rem;padding-bottom:0.75rem;padding-right:0.6rem;} }
+.res-cand-name-block { display:flex; flex-direction:column; line-height:1.1; }
+.res-cand-surname { font-size:1.25rem; font-weight:800; text-transform:uppercase; letter-spacing:0.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+@media(max-width:640px){ .res-cand-surname{font-size:0.95rem;} }
+.res-cand-firstname { font-size:1rem; font-weight:600; text-transform:uppercase; letter-spacing:0.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+@media(max-width:640px){ .res-cand-firstname{font-size:0.78rem;} }
+.res-cand-count { display:flex; align-items:flex-end; gap:0.25rem; }
+.res-cand-num { font-size:2rem; font-weight:700; line-height:1; }
+@media(max-width:640px){ .res-cand-num{font-size:1.4rem;} }
+.res-cand-unit { font-size:0.75rem; margin-bottom:2px; }
+.res-cand-bar-bg { width:100%; border-radius:999px; height:6px; }
+.res-cand-bar-fill { height:6px; border-radius:999px; }
+/* Winner - blue (same as live) with yellow name */
+.res-cand-avatar--winner { border-color:#ffffff !important; background:linear-gradient(135deg,#0044cc,#0066ff) !important; }
+.res-cand-rect--winner { background:linear-gradient(135deg,#0066ff 0%,#0033cc 100%) !important; border-color:#0055ee !important; box-shadow:0 4px 24px rgba(0,102,255,0.45) !important; }
+.res-cand-surname--winner { color:#ffd700 !important; }
+.res-cand-firstname--winner { color:rgba(255,255,255,0.75) !important; }
+.res-cand-num--winner { color:#ffffff !important; }
+.res-cand-unit--winner { color:rgba(255,255,255,0.6) !important; }
+.res-cand-bar-bg--winner { background:rgba(255,255,255,0.2) !important; }
+.res-cand-bar-fill--winner { background:rgba(255,215,0,0.7) !important; }
+/* Loser - muted gray */
+.res-cand-avatar--loser { border-color:#ffffff !important; background:linear-gradient(135deg,#9ca3af,#d1d5db) !important; }
+.res-cand-rect--loser { background:linear-gradient(135deg,#e5e7eb 0%,#f3f4f6 100%) !important; border-color:#d1d5db !important; box-shadow:0 2px 8px rgba(0,0,0,0.06) !important; }
+.res-cand-surname--loser { color:#6b7280 !important; }
+.res-cand-firstname--loser { color:rgba(107,114,128,0.7) !important; }
+.res-cand-num--loser { color:#9ca3af !important; }
+.res-cand-unit--loser { color:rgba(107,114,128,0.6) !important; }
+.res-cand-bar-bg--loser { background:rgba(107,114,128,0.12) !important; }
+.res-cand-bar-fill--loser { background:#9ca3af !important; }
+/* Tie - blue */
+.res-cand-avatar--tie { border-color:#ffffff !important; background:linear-gradient(135deg,#0044cc,#0066ff) !important; }
+.res-cand-rect--tie { background:linear-gradient(135deg,#0066ff 0%,#0033cc 100%) !important; border-color:#0055ee !important; box-shadow:0 4px 24px rgba(0,102,255,0.45) !important; }
+.res-cand-surname--tie { color:#ffffff !important; }
+.res-cand-firstname--tie { color:rgba(255,255,255,0.75) !important; }
+.res-cand-num--tie { color:#ffffff !important; }
+.res-cand-unit--tie { color:rgba(255,255,255,0.6) !important; }
+.res-cand-bar-bg--tie { background:rgba(255,255,255,0.2) !important; }
+.res-cand-bar-fill--tie { background:rgba(255,255,255,0.7) !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="res-glow-1"></div>
+<div class="res-glow-2"></div>
+
+{% if election.organization.banner %}
+<div class="res-org-banner" style="background-image: url('{{ election.organization.banner.url }}');">
+{% else %}
+<div class="res-org-banner res-org-banner--fallback">
+{% endif %}
+  <div class="res-banner-blur"></div>
+  <div class="res-banner-overlay">
+    <div class="res-banner-content">
+      <a href="{% url 'elections:election_list' %}" class="res-banner-back">← Back to Elections</a>
+      <h1 class="res-banner-title">{{ election.title }}</h1>
+      <div class="res-banner-org">
+        {% if election.organization.logo %}
+          <img src="{{ election.organization.logo.url }}" alt="{{ election.organization.name }}"
+               class="w-10 h-10 rounded-full object-cover flex-shrink-0"
+               style="border: 2px solid rgba(255,255,255,0.45);">
+        {% else %}
+          <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+               style="background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.3);">
+            <span style="color:white;font-size:11px;font-weight:700;">{{ election.organization.name|slice:":2"|upper }}</span>
+          </div>
+        {% endif %}
+        <span class="res-banner-org-name">{{ election.organization.name }}</span>
+      </div>
+      {% if election.results_released_at %}
+        <p style="font-size:0.75rem;color:rgba(255,255,255,0.55);margin-top:0.25rem;">Results released {{ election.results_released_at|date:"M d, Y g:i A" }}</p>
+      {% endif %}
+    </div>
+    <div style="position:absolute;top:1rem;right:1rem;z-index:4;">
+      {% if election.status == 'closed' %}
+        <span class="text-xs px-3 py-1 rounded-full font-medium" style="background:rgba(253,224,71,0.25);color:#fef08a;border:1px solid rgba(253,224,71,0.4);">Awaiting Release</span>
+      {% else %}
+        <span class="text-xs px-3 py-1 rounded-full font-medium" style="background:rgba(255,255,255,0.2);color:#ffffff;border:1px solid rgba(255,255,255,0.35);">Results Released</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="relative" style="z-index: 2;">
+<div class="max-w-4xl mx-auto">
+
+  {% if messages %}
+  <div class="space-y-2 mb-5">
+    {% for message in messages %}
+    <div class="flex items-start gap-3 px-4 py-3 rounded-xl text-sm font-medium backdrop-blur-sm
+      {% if message.tags == 'error' %}
+        " style="background:rgba(254,226,226,0.85);border:1px solid rgba(239,68,68,0.3);color:#991b1b;">
+      <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      {% elif message.tags == 'success' %}
+        " style="background:rgba(209,250,229,0.85);border:1px solid rgba(16,185,129,0.3);color:#065f46;">
+      <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+      {% else %}
+        " style="background:rgba(219,234,254,0.85);border:1px solid rgba(37,99,235,0.25);color:#1e40af;">
+      <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      {% endif %}
+      <span>{{ message }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if election.status == 'closed' %}
+    <div class="mb-6 px-4 py-3 rounded-xl text-sm text-yellow-800" style="background:rgba(254,249,195,0.8);border:1px solid rgba(234,179,8,0.3);">
+      Results have not been released yet. Check back later.
+    </div>
+  {% endif %}
+
+  {% if tally_by_position %}
+  <div class="space-y-8 mb-6">
+    {% for position, candidates, is_tied, no_contest in tally_by_position %}
+      <div class="text-center mb-5">
+        <p class="res-position-label">Position</p>
+        <h2 class="res-position-title">{{ position.name }}</h2>
+        {% if no_contest %}
+          <span class="inline-block text-xs px-3 py-0.5 rounded-full font-medium mt-1" style="background:rgba(107,114,128,0.1);color:#6b7280;border:1px solid rgba(107,114,128,0.2);">No votes cast</span>
+        {% elif is_tied %}
+          <span class="inline-block text-sm px-3 py-0.5 rounded-full font-medium mt-1" style="background:rgba(234,88,12,0.1);color:#c2410c;border:1px solid rgba(234,88,12,0.25);">Tie — requires resolution</span>
+        {% endif %}
+      </div>
+
+      <div class="res-candidates-grid">
+        {% for candidate in candidates %}
+        <div class="res-cand-wrap">
+          <div class="res-cand-card">
+            <div class="res-cand-avatar
+              {% if is_tied and forloop.counter <= 2 %}res-cand-avatar--tie
+              {% elif forloop.first and not is_tied and not no_contest %}res-cand-avatar--winner
+              {% else %}res-cand-avatar--loser{% endif %}">
+              {% if candidate.profile_picture %}
+                <img src="{{ candidate.profile_picture }}" alt="{{ candidate.name }}" class="w-full h-full rounded-full object-cover">
+              {% else %}
+                <span class="res-cand-initial">{{ candidate.name|slice:":1" }}</span>
+              {% endif %}
+            </div>
+            <div class="res-cand-rect
+              {% if is_tied and forloop.counter <= 2 %}res-cand-rect--tie
+              {% elif forloop.first and not is_tied and not no_contest %}res-cand-rect--winner
+              {% else %}res-cand-rect--loser{% endif %}">
+              <div class="res-cand-name-block">
+                <span class="res-cand-surname
+                  {% if is_tied and forloop.counter <= 2 %}res-cand-surname--tie
+                  {% elif forloop.first and not is_tied and not no_contest %}res-cand-surname--winner
+                  {% else %}res-cand-surname--loser{% endif %}"
+                  data-fullname="{{ candidate.name|upper }}"></span>
+                <span class="res-cand-firstname
+                  {% if is_tied and forloop.counter <= 2 %}res-cand-firstname--tie
+                  {% elif forloop.first and not is_tied and not no_contest %}res-cand-firstname--winner
+                  {% else %}res-cand-firstname--loser{% endif %}"></span>
+              </div>
+              <div class="res-cand-count">
+                <span class="res-cand-num
+                  {% if is_tied and forloop.counter <= 2 %}res-cand-num--tie
+                  {% elif forloop.first and not is_tied and not no_contest %}res-cand-num--winner
+                  {% else %}res-cand-num--loser{% endif %}">{{ candidate.count }}</span>
+                <span class="res-cand-unit
+                  {% if is_tied and forloop.counter <= 2 %}res-cand-unit--tie
+                  {% elif forloop.first and not is_tied and not no_contest %}res-cand-unit--winner
+                  {% else %}res-cand-unit--loser{% endif %}">vote{{ candidate.count|pluralize }}</span>
+              </div>
+              <div class="res-cand-bar-bg
+                {% if is_tied and forloop.counter <= 2 %}res-cand-bar-bg--tie
+                {% elif forloop.first and not is_tied and not no_contest %}res-cand-bar-bg--winner
+                {% else %}res-cand-bar-bg--loser{% endif %}">
+                {% if candidate.count > 0 %}
+                <div class="res-cand-bar-fill
+                  {% if is_tied and forloop.counter <= 2 %}res-cand-bar-fill--tie
+                  {% elif forloop.first and not is_tied and not no_contest %}res-cand-bar-fill--winner
+                  {% else %}res-cand-bar-fill--loser{% endif %}"
+                  style="width: {{ candidate.count|default:0 }}0%;"></div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+        {% empty %}
+        <p class="text-sm text-center col-span-2" style="color: rgba(27,42,123,0.4);">No candidates for this position.</p>
+        {% endfor %}
+      </div>
+      {% if not forloop.last %}<hr style="border-color:rgba(27,42,123,0.1);margin:2rem 0;">{% endif %}
+    {% endfor %}
+  </div>
+
+  <!-- Voter Participation — compact strip -->
+  {% if total_voters %}
+  <div class="mb-6 px-4 py-3 rounded-xl flex flex-wrap items-center gap-4 backdrop-blur-sm"
+       style="background:rgba(255,255,255,0.55);border:1px solid rgba(27,42,123,0.1);">
+    <span class="text-xs font-semibold uppercase tracking-wider" style="color:rgba(27,42,123,0.45);">Turnout</span>
+    <div class="flex items-center gap-3 flex-1 min-w-0">
+      <div class="flex-1 bg-white bg-opacity-60 rounded-full h-2" style="border:1px solid rgba(27,42,123,0.1);">
+        <div class="h-2 rounded-full" style="width:{% widthratio total_voted total_voters 100 %}%;background:linear-gradient(90deg,#1B2A7B,#2563eb);"></div>
+      </div>
+    </div>
+    <div class="flex items-center gap-4 flex-shrink-0 text-xs">
+      <span style="color:rgba(27,42,123,0.5);">
+        <span class="font-bold text-navy text-sm">{{ total_voters }}</span> eligible
+      </span>
+      <span style="color:#059669;">
+        <span class="font-bold text-sm">{{ total_voted }}</span> voted
+      </span>
+      <span style="color:#9ca3af;">
+        <span class="font-bold text-sm">{{ total_abstained }}</span> abstained
+      </span>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Voter Roster — manager only -->
+  {% if is_manager and voter_list %}
+  <div class="mb-6 rounded-xl backdrop-blur-sm overflow-hidden"
+       style="background:rgba(255,255,255,0.75);border:1px solid rgba(27,42,123,0.1);">
+    <div class="px-5 py-4 border-b" style="border-color:rgba(27,42,123,0.08);">
+      <!-- Header row -->
+      <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
+        <div>
+          <h3 class="text-sm font-semibold" style="color:#1B2A7B;">Voter Roster</h3>
+          <p class="text-xs mt-0.5" style="color:rgba(27,42,123,0.45);">
+            {{ total_voters }} eligible ·
+            <span style="color:#059669;font-weight:600;">{{ total_voted }} voted</span> ·
+            <span style="color:#9ca3af;">{{ total_abstained }} abstained</span>
+          </p>
+        </div>
+        <div class="flex gap-1 text-xs">
+          <button onclick="filterResultRoster('all')" id="rr-tab-all"
+                  class="rr-tab px-3 py-1.5 rounded-lg font-medium transition-colors"
+                  style="background:#1B2A7B;color:white;">All</button>
+          <button onclick="filterResultRoster('voted')" id="rr-tab-voted"
+                  class="rr-tab px-3 py-1.5 rounded-lg font-medium transition-colors"
+                  style="background:#f3f4f6;color:#4b5563;">Voted</button>
+          <button onclick="filterResultRoster('abstained')" id="rr-tab-abstained"
+                  class="rr-tab px-3 py-1.5 rounded-lg font-medium transition-colors"
+                  style="background:#f3f4f6;color:#4b5563;">Abstained</button>
+        </div>
+      </div>
+      <!-- Voter pool description pills -->
+      {% if voter_pool_description %}
+      <div class="flex flex-wrap gap-1.5">
+        <span class="text-xs font-semibold uppercase tracking-wider mr-1" style="color:rgba(27,42,123,0.4);line-height:1.8;">Eligible:</span>
+        {% for desc in voter_pool_description %}
+          <span class="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium"
+                style="background:rgba(27,42,123,0.08);color:#1B2A7B;">
+            <svg class="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            {{ desc }}
+          </span>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    <div class="px-4 py-3 border-b" style="border-color:rgba(27,42,123,0.06);">
+      <div class="relative">
+        <svg class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2" style="color:rgba(27,42,123,0.35);" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input type="text" id="rr-search" placeholder="Search by name or student ID…"
+               oninput="filterResultRoster(currentRRTab)"
+               class="w-full rounded-lg pl-9 pr-3 py-2 text-xs focus:outline-none transition-colors"
+               style="background:rgba(27,42,123,0.05);border:1px solid rgba(27,42,123,0.1);color:#1B2A7B;">
+      </div>
+    </div>
+    <div class="divide-y px-2" style="border-color:rgba(27,42,123,0.05);max-height:400px;overflow-y:auto;" id="rr-list">
+      {% for entry in voter_list %}
+      <div class="rr-row flex items-center gap-3 py-2.5 px-2 rounded-lg"
+           data-voted="{{ entry.voted|yesno:'true,false' }}"
+           data-name="{{ entry.user.get_full_name|lower }}"
+           data-id="{{ entry.user.student_id|lower }}">
+        {% if entry.user.profile_picture %}
+          <img src="{{ entry.user.profile_picture.url }}" alt="Profile"
+               class="w-8 h-8 rounded-full object-cover flex-shrink-0">
+        {% else %}
+          <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+               style="background:rgba(27,42,123,0.1);">
+            <span style="color:#1B2A7B;font-size:0.7rem;font-weight:700;">{{ entry.user.first_name|first }}{{ entry.user.last_name|first }}</span>
+          </div>
+        {% endif %}
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium truncate" style="color:#1B2A7B;">{{ entry.user.get_full_name }}</p>
+          <p class="text-xs" style="color:rgba(27,42,123,0.45);">{{ entry.user.student_id }}{% if entry.user.course %} · {{ entry.user.course.abbreviation }}{% endif %}</p>
+        </div>
+        {% if entry.voted %}
+          <span class="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0"
+                style="background:rgba(5,150,105,0.1);color:#059669;">
+            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+            Voted
+          </span>
+        {% else %}
+          <span class="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0"
+                style="background:rgba(156,163,175,0.15);color:#9ca3af;">
+            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            Abstained
+          </span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    <p id="rr-empty" class="hidden text-xs text-center py-4" style="color:rgba(27,42,123,0.35);">No voters match this filter.</p>
+  </div>
+  {% endif %}
+
+  <!-- Apply election results (manager only) -->
+  {% if show_promotions and election.status == 'results_released' %}
+  <div class="bg-white rounded-xl border border-gray-200 p-5 mb-6">
+    <h2 class="text-sm font-semibold text-navy mb-4">Apply Election Results</h2>
+
+    {% for position, candidates, is_tied, no_contest in tally_by_position %}
+      {% if candidates %}
+        {% if no_contest %}
+        <div class="flex gap-3 p-3 rounded-lg border border-gray-200 bg-gray-50 mb-2">
+          <svg class="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <div>
+            <p class="text-sm font-medium text-gray-500">{{ position.name }}</p>
+            <p class="text-xs text-gray-400 mt-0.5">No votes were cast — result cannot be applied. Consider re-running this position.</p>
+          </div>
+        </div>
+        {% elif is_tied %}
+        <div class="flex gap-3 p-3 rounded-lg border border-orange border-opacity-40 bg-orange bg-opacity-5 mb-2">
+          <svg class="w-4 h-4 text-orange flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <div>
+            <p class="text-sm font-medium text-gray-800">{{ position.name }} — Tie</p>
+            <p class="text-xs text-orange mt-0.5">{{ candidates.0.name }} and {{ candidates.1.name }} are tied at {{ candidates.0.count }} vote{{ candidates.0.count|pluralize }} each. Run a separate runoff election to resolve.</p>
+          </div>
+        </div>
+        {% elif candidates.0.candidate_id in deferred_candidate_ids %}
+        <div class="flex gap-3 p-3 rounded-lg border border-yellow-200 bg-yellow-50 mb-2">
+          <svg class="w-4 h-4 text-yellow-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <div>
+            <p class="text-sm font-medium text-gray-800">{{ position.name }} — Deferred</p>
+            <p class="text-xs text-yellow-700 mt-0.5">{{ candidates.0.name }} is still the active chairman. Apply the incoming chairman's result first, then this will become available.</p>
+          </div>
+        </div>
+        {% elif candidates.0.candidate_id in in_window_candidate_ids %}
+        <div class="flex gap-3 p-3 rounded-lg border border-gray-200 bg-gray-50 mb-2">
+          <svg class="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <div>
+            <p class="text-sm font-medium text-gray-800">{{ position.name }} — Transition Window</p>
+            <p class="text-xs text-gray-500 mt-0.5">
+              {% if position.target_role == 'chairman' %}{{ candidates.0.name }} is in their 24hr transition window and cannot become chairman again until it ends.
+              {% else %}{{ candidates.0.name }} is in their 24hr transition window. Only they can end it early to apply this result.{% endif %}
+            </p>
+          </div>
+        </div>
+        {% elif candidates.0.candidate_id in self_revokable_candidate_ids %}
+        <div class="flex gap-3 p-3 rounded-lg border border-orange border-opacity-40 bg-orange bg-opacity-5 mb-2">
+          <svg class="w-4 h-4 text-orange flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <div>
+            <p class="text-sm font-medium text-gray-800">{{ position.name }} — Your Transition Window</p>
+            <p class="text-xs text-orange mt-0.5">You are in your 24hr transition window. Applying this result will immediately end your vice chairman access.</p>
+          </div>
+        </div>
+        {% endif %}
+      {% endif %}
+    {% endfor %}
+
+    <form method="POST" action="{% url 'elections:election_promote' election.id %}">
+      {% csrf_token %}
+      <div class="space-y-2 mb-4 mt-2">
+        {% for position, candidates, is_tied, no_contest in tally_by_position %}
+          {% if candidates and not no_contest and not is_tied %}
+            {% if candidates.0.candidate_id not in deferred_candidate_ids and candidates.0.candidate_id not in in_window_candidate_ids %}
+            <label class="flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors
+              {% if candidates.0.candidate_id in promoted_candidate_ids %}border-green-200 bg-green-50 cursor-default
+              {% elif candidates.0.candidate_id in self_revokable_candidate_ids %}border-orange border-opacity-40 bg-orange bg-opacity-5
+              {% else %}border-gray-200 hover:border-light-blue{% endif %}">
+              <input type="checkbox" name="promote_candidates" value="{{ candidates.0.candidate_id }}"
+                     class="rounded"
+                     {% if candidates.0.candidate_id in promoted_candidate_ids %}disabled checked{% endif %}>
+              {% if candidates.0.profile_picture %}
+                <img src="{{ candidates.0.profile_picture }}" class="w-8 h-8 rounded-full object-cover flex-shrink-0">
+              {% else %}
+                <div class="w-8 h-8 rounded-full bg-navy flex items-center justify-center flex-shrink-0">
+                  <span class="text-white text-xs font-semibold">{{ candidates.0.name|slice:":1" }}</span>
+                </div>
+              {% endif %}
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-gray-800">{{ candidates.0.name }}</p>
+                <p class="text-xs text-gray-500">
+                  {{ position.name }}
+                  <span class="mx-1">·</span>
+                  <strong>{{ position.get_target_role_display }}</strong>
+                  <span class="text-gray-400 ml-1">({{ candidates.0.count }} vote{{ candidates.0.count|pluralize }})</span>
+                  {% if position.target_role == 'chairman' %}<span class="text-orange ml-1">· 24hr handover applies</span>{% endif %}
+                  {% if candidates.0.candidate_id in promoted_candidate_ids %}<span class="text-green-600 ml-1">· Already applied</span>{% endif %}
+                </p>
+              </div>
+            </label>
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+      </div>
+      <button type="submit"
+              class="w-full bg-navy text-white py-2.5 rounded-lg text-sm font-medium hover:bg-navy-light transition-colors">
+        Apply Selected Results
+      </button>
+    </form>
+  </div>
+  {% endif %}
+
+  {% endif %}
+
+</div><!-- end max-w-2xl -->
+</div><!-- end relative z-2 -->
+
+<script>
+document.querySelectorAll('.res-cand-surname').forEach(function(el) {
+    var full = el.dataset.fullname || '';
+    var parts = full.trim().split(' ');
+    var surname = parts[parts.length - 1];
+    var firstname = parts.slice(0, parts.length - 1).join(' ');
+    el.textContent = surname + ',';
+    var fnEl = el.nextElementSibling;
+    if (fnEl) fnEl.textContent = firstname;
+});
+
+// ── Results voter roster filter ───────────────────────────────────────────────
+var currentRRTab = 'all';
+function filterResultRoster(tab) {
+  currentRRTab = tab;
+  var search = (document.getElementById('rr-search') || {}).value || '';
+  search = search.toLowerCase().trim();
+
+  ['all', 'voted', 'abstained'].forEach(function(t) {
+    var btn = document.getElementById('rr-tab-' + t);
+    if (!btn) return;
+    if (t === tab) {
+      btn.style.background = '#1B2A7B';
+      btn.style.color = 'white';
+    } else {
+      btn.style.background = '#f3f4f6';
+      btn.style.color = '#4b5563';
+    }
+  });
+
+  var rows = document.querySelectorAll('.rr-row');
+  var visible = 0;
+  rows.forEach(function(row) {
+    var voted = row.dataset.voted === 'true';
+    var name = row.dataset.name || '';
+    var id = row.dataset.id || '';
+    var matchTab = tab === 'all' || (tab === 'voted' && voted) || (tab === 'abstained' && !voted);
+    var matchSearch = !search || name.includes(search) || id.includes(search);
+    var show = matchTab && matchSearch;
+    row.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+
+  var empty = document.getElementById('rr-empty');
+  if (empty) empty.classList.toggle('hidden', visible > 0);
+}
+</script>
+{% endblock %}

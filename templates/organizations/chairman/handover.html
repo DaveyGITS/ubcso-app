@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Chairman Handover — {{ org.name }}{% endblock %}
+{% block breadcrumb %}Manage / {{ org.name }} / Handover{% endblock %}
+{% block mobile_title %}Handover{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+
+    <div class="flex items-center gap-3 mb-6">
+        <a href="{% url 'organizations:chairman_dashboard' org.id %}"
+           class="text-gray-400 hover:text-gray-600 transition-colors">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        </a>
+        <h1 class="text-xl font-semibold text-gray-900">Chairman handover</h1>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+        <div class="mb-4 p-3 rounded-lg text-sm
+            {% if message.tags == 'error' %}bg-red-50 text-red-600 border border-red-200
+            {% else %}bg-green-50 text-green-600 border border-green-200{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Warning banner -->
+    <div class="bg-orange bg-opacity-10 border border-orange border-opacity-30 rounded-xl p-4 mb-6">
+        <div class="flex gap-3">
+            <svg class="w-5 h-5 text-orange flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            <div>
+                <p class="text-sm font-medium text-orange">This action cannot be undone</p>
+                <p class="text-xs text-gray-600 mt-1 leading-relaxed">
+                    The selected member will immediately become chairman. You will retain temporary vice chairman access for 24 hours, after which you will be demoted to member. You can self-revoke your temporary access at any time.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <form method="POST">
+        {% csrf_token %}
+
+        <!-- Select successor -->
+        <div class="bg-white rounded-2xl border border-gray-200 p-6 mb-4">
+            <h2 class="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wider">Select incoming chairman</h2>
+
+            <!-- Filter input (only shown when there are enough members to warrant it) -->
+            {% if eligible|length > 5 %}
+            <div class="relative mb-3">
+                <input type="text"
+                       id="handover-filter"
+                       placeholder="Filter by name or student ID…"
+                       autocomplete="off"
+                       oninput="filterHandoverCandidates(this.value)"
+                       class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy transition-colors pl-8">
+                <svg class="w-4 h-4 text-gray-400 absolute left-2.5 top-2.5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+            </div>
+            {% endif %}
+
+            <div class="space-y-2" id="handover-candidates">
+                {% for membership in eligible %}
+                <label class="handover-card flex items-center gap-3 p-3 rounded-xl border border-gray-200 cursor-pointer hover:border-navy transition-colors has-[:checked]:border-navy has-[:checked]:bg-navy has-[:checked]:bg-opacity-5"
+                       data-name="{{ membership.user.get_full_name|lower }}"
+                       data-id="{{ membership.user.student_id|lower }}">
+                    <input type="radio" name="successor_id" value="{{ membership.id }}" class="accent-navy flex-shrink-0" required>
+                    {% if membership.user.profile_picture %}
+                        <img src="{{ membership.user.profile_picture.url }}" alt="Profile"
+                             class="w-10 h-10 rounded-full object-cover flex-shrink-0">
+                    {% else %}
+                        <div class="w-10 h-10 rounded-full bg-navy bg-opacity-10 flex items-center justify-center flex-shrink-0">
+                            <span class="text-navy text-sm font-semibold">{{ membership.user.first_name|first }}{{ membership.user.last_name|first }}</span>
+                        </div>
+                    {% endif %}
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-900 truncate">{{ membership.user.get_full_name }}</p>
+                        <p class="text-xs text-gray-400">
+                            {{ membership.user.student_id }}
+                            · {% if membership.custom_role %}{{ membership.custom_role.name }}{% else %}{{ membership.get_role_display }}{% endif %}
+                        </p>
+                    </div>
+                </label>
+                {% endfor %}
+                <p id="handover-no-results" class="hidden text-sm text-gray-400 py-2 text-center">No members match your search.</p>
+            </div>
+        </div>
+
+        <!-- Handover note -->
+        <div class="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
+            <h2 class="text-sm font-semibold text-gray-700 mb-1 uppercase tracking-wider">Handover note</h2>
+            <p class="text-xs text-gray-400 mb-4">Optional — delivered as a priority notification to the incoming chairman.</p>
+            <textarea name="note" rows="5"
+                      placeholder="Share important information, ongoing tasks, or advice for the incoming chairman..."
+                      class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-navy transition-colors resize-none"></textarea>
+        </div>
+
+        <div class="flex gap-3">
+            <a href="{% url 'organizations:chairman_dashboard' org.id %}"
+               class="flex-1 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-600 font-medium text-center hover:bg-gray-50 transition-colors">
+                Cancel
+            </a>
+            <button type="submit"
+                    onclick="return confirm('Are you sure you want to hand over the chairman role? This cannot be undone.')"
+                    class="flex-1 py-2.5 bg-orange text-white rounded-lg text-sm font-medium hover:bg-orange-light transition-colors">
+                Confirm handover
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+function filterHandoverCandidates(q) {
+    q = q.toLowerCase().trim();
+    var cards = document.querySelectorAll('.handover-card');
+    var visible = 0;
+    cards.forEach(function (card) {
+        var name = card.dataset.name || '';
+        var id   = card.dataset.id   || '';
+        var show = !q || name.includes(q) || id.includes(q);
+        card.style.display = show ? '' : 'none';
+        if (show) visible++;
+    });
+    var noResults = document.getElementById('handover-no-results');
+    if (noResults) noResults.classList.toggle('hidden', visible > 0);
+}
+</script>
+{% endblock %}

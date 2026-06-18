@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+{% block title %}Admin Privileges — UB-CSO{% endblock %}
+{% block breadcrumb %}Admin Panel / Privileges{% endblock %}
+{% block mobile_title %}Admin Privileges{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+
+  <div class="mb-6">
+    <a href="{% url 'core:admin_panel' %}" class="text-sm text-gray-500 hover:text-navy transition-colors">← Admin Panel</a>
+    <h1 class="text-xl font-bold text-navy mt-1">Admin Privilege Management</h1>
+    <p class="text-sm text-gray-500 mt-0.5">Grant or revoke CSO Admin access. President and Vice Chairman only.</p>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="mb-4 px-4 py-3 rounded-lg text-sm
+        {% if message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200
+        {% else %}bg-green-50 text-green-700 border border-green-200{% endif %}">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Current admins -->
+  <div class="bg-white rounded-xl border border-gray-200 p-5 mb-6">
+    <h2 class="text-sm font-semibold text-navy mb-4">Current CSO Admins</h2>
+    {% if admins %}
+    <div class="space-y-3">
+      {% for admin in admins %}
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          {% if admin.profile_picture %}
+            <img src="{{ admin.profile_picture.url }}" class="w-8 h-8 rounded-full object-cover flex-shrink-0">
+          {% else %}
+            <div class="w-8 h-8 rounded-full bg-navy flex items-center justify-center flex-shrink-0">
+              <span class="text-white text-xs font-semibold">{{ admin.first_name|first }}{{ admin.last_name|first }}</span>
+            </div>
+          {% endif %}
+          <div>
+            <p class="text-sm font-medium text-gray-800">{{ admin.get_full_name }}
+              {% if admin.is_cso_president %}
+                <span class="ml-1.5 text-xs bg-orange bg-opacity-10 text-orange border border-orange border-opacity-20 px-1.5 py-0.5 rounded">President</span>
+              {% elif admin.is_manually_granted_admin %}
+                <span class="ml-1.5 text-xs bg-blue-50 text-blue-600 border border-blue-200 px-1.5 py-0.5 rounded">Manual grant</span>
+              {% else %}
+                <span class="ml-1.5 text-xs bg-gray-100 text-gray-500 border border-gray-200 px-1.5 py-0.5 rounded">Auto (role)</span>
+              {% endif %}
+            </p>
+            <p class="text-xs text-gray-400">{{ admin.student_id }}
+              {% if admin.cso_admin_expiry %}
+                <span class="text-orange ml-1">· Temp access until {{ admin.cso_admin_expiry|date:"M d, g:i A" }}</span>
+              {% endif %}
+            </p>
+          </div>
+        </div>
+        {% if not admin.is_cso_president %}
+        <form method="POST">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="revoke">
+          <input type="hidden" name="user_id" value="{{ admin.id }}">
+          <button type="submit"
+                  class="text-xs border border-red-300 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors"
+                  onclick="return confirm('Revoke admin access for {{ admin.get_full_name }}?')">
+            Revoke
+          </button>
+        </form>
+        {% else %}
+        <span class="text-xs text-gray-300 px-3 py-1.5">—</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-sm text-gray-400">No CSO Admins assigned yet.</p>
+    {% endif %}
+  </div>
+
+  <!-- Grant access -->
+  <div class="bg-white rounded-xl border border-gray-200 p-5">
+    <h2 class="text-sm font-semibold text-navy mb-4">Grant Admin Access</h2>
+    <form method="POST" class="flex gap-3" id="grant-form">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="grant">
+      <input type="hidden" name="user_id" id="grant-user-id" required>
+      <div class="flex-1 relative">
+        <input type="text"
+               id="grant-search-input"
+               placeholder="Search by name or student ID…"
+               autocomplete="off"
+               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-light-blue transition-colors"
+               oninput="searchGrantUser()"
+               onkeydown="if(event.key==='Escape') clearGrantSearch()">
+        <ul id="grant-search-results"
+            class="absolute z-20 left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg hidden text-sm overflow-y-auto"
+            style="max-height: 220px;"></ul>
+      </div>
+      <button type="submit" class="bg-navy text-white text-sm px-4 py-2 rounded-lg hover:bg-navy-light transition-colors whitespace-nowrap">
+        Grant Access
+      </button>
+    </form>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  var _timer = null;
+  var SEARCH_URL = "{% url 'core:cso_member_search' %}";
+
+  window.searchGrantUser = function () {
+    var input = document.getElementById('grant-search-input');
+    var hiddenId = document.getElementById('grant-user-id');
+    var results = document.getElementById('grant-search-results');
+    var q = input.value.trim();
+
+    hiddenId.value = '';
+
+    if (q.length < 2) {
+      results.classList.add('hidden');
+      results.innerHTML = '';
+      return;
+    }
+
+    clearTimeout(_timer);
+    _timer = setTimeout(function () {
+      fetch(SEARCH_URL + '?q=' + encodeURIComponent(q), {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          results.innerHTML = '';
+          if (!data.results || data.results.length === 0) {
+            results.innerHTML = '<li class="px-3 py-2 text-gray-400">No eligible members found</li>';
+          } else {
+            data.results.forEach(function (item) {
+              var li = document.createElement('li');
+              li.className = 'px-3 py-2 hover:bg-gray-50 cursor-pointer flex justify-between items-center';
+              li.innerHTML =
+                '<span class="font-medium text-gray-800 truncate min-w-0 mr-2">' + item.name + '</span>' +
+                '<span class="text-xs text-gray-400 flex-shrink-0">' + item.student_id + '</span>';
+              li.addEventListener('mousedown', function (e) {
+                e.preventDefault();
+                input.value = item.name + ' (' + item.student_id + ')';
+                hiddenId.value = item.id;
+                results.classList.add('hidden');
+              });
+              results.appendChild(li);
+            });
+          }
+          results.classList.remove('hidden');
+        });
+    }, 250);
+  };
+
+  window.clearGrantSearch = function () {
+    var results = document.getElementById('grant-search-results');
+    var input = document.getElementById('grant-search-input');
+    var hiddenId = document.getElementById('grant-user-id');
+    if (results) { results.classList.add('hidden'); results.innerHTML = ''; }
+    if (input) input.value = '';
+    if (hiddenId) hiddenId.value = '';
+  };
+
+  document.addEventListener('click', function (e) {
+    var results = document.getElementById('grant-search-results');
+    var input = document.getElementById('grant-search-input');
+    if (results && input && !results.contains(e.target) && e.target !== input) {
+      results.classList.add('hidden');
+    }
+  });
+})();
+</script>
+
+{% endblock %}

@@ -1,0 +1,346 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Submit Renewal — {{ org.name }} — UB-CSO{% endblock %}
+{% block breadcrumb %}Manage / {{ org.name }} / Renewal{% endblock %}
+{% block mobile_title %}Submit Renewal{% endblock %}
+
+{% block content %}
+<!-- Blue glow -->
+<div class="fixed top-0 left-0 pointer-events-none" style="z-index:1;width:70%;height:60%;background:radial-gradient(ellipse at 0% 0%, rgba(34,119,224,0.69) 0%, rgba(93,173,226,0.18) 30%, transparent 70%);"></div>
+<div class="max-w-2xl mx-auto relative" style="z-index:2;">
+
+    {# ── Back link + heading ──────────────────────────────────────────────── #}
+    <div class="flex items-center gap-3 mb-6">
+        <a href="{% url 'organizations:chairman_dashboard' org.id %}" class="text-gray-400 hover:text-gray-600 transition-colors">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+        </a>
+        <h1 class="text-xl font-semibold text-gray-900">Renewal / Accreditation Application</h1>
+    </div>
+
+    {# ── Error display ──────────────────────────────────────────────────────── #}
+    {% if errors %}
+    <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+        <div class="flex gap-3">
+            <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <div>
+                <p class="text-sm font-medium text-red-700 mb-1">Please fix the following errors:</p>
+                <ul class="list-disc list-inside space-y-0.5">
+                    {% for error in errors %}
+                    <li class="text-xs text-red-600">{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ── Official Forms Download ─────────────────────────────────────────────── #}
+    {% if official_forms %}
+    <div class="bg-white rounded-2xl border border-gray-200 p-6 mb-4">
+        <h2 class="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">Download Official Forms</h2>
+        <p class="text-xs text-gray-400 mb-4">Download and fill out the required forms before uploading them below.</p>
+        <div class="flex flex-col gap-2">
+            {% for form_link in official_forms %}
+            <a href="{{ form_link.url }}" target="_blank" rel="noopener noreferrer"
+               class="flex items-center gap-3 px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-navy hover:bg-navy hover:text-white transition-colors group">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <span class="font-medium">{{ form_link.label }}</span>
+                <svg class="w-3.5 h-3.5 ml-auto opacity-50 group-hover:opacity-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                </svg>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {# ── Info banner ────────────────────────────────────────────────────────── #}
+    <div class="bg-light-blue bg-opacity-10 border border-light-blue border-opacity-20 rounded-xl p-4 mb-6">
+        <div class="flex gap-3">
+            <svg class="w-5 h-5 text-light-blue flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <div>
+                <p class="text-sm font-medium text-light-blue">How this works</p>
+                <p class="text-xs text-gray-500 mt-1 leading-relaxed">
+                    Upload all required documents for your renewal application. The CSO Admin will review your
+                    submission and notify you of the outcome. Maximum file size per document is 10 MB.
+                    Accepted formats: PDF, DOC, DOCX, JPG, PNG.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <form method="POST" action="{% url 'organizations:renewal_apply' org.id %}" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        {# ── Application Details (read-only) ──────────────────────────────── #}
+        <div class="bg-white rounded-2xl border border-gray-200 p-6 mb-4">
+            <h2 class="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wider">Application Details</h2>
+
+            <div class="mb-4">
+                <p class="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Organization</p>
+                <p class="text-sm font-semibold text-gray-900">{{ org.name }}</p>
+            </div>
+
+            <div class="mb-4">
+                <p class="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Chairman</p>
+                <p class="text-sm font-semibold text-gray-900">
+                    {% if chairman_membership %}
+                        {{ chairman_membership.user.get_full_name }}
+                        <span class="text-xs text-gray-400 font-normal ml-1">({{ chairman_membership.user.student_id }})</span>
+                    {% else %}
+                        <span class="text-gray-400">—</span>
+                    {% endif %}
+                </p>
+            </div>
+
+            <div>
+                <p class="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Registration Type</p>
+                <p class="text-sm font-semibold text-gray-900">Renewal / Accreditation</p>
+            </div>
+        </div>
+
+        {# ── Document Uploads ─────────────────────────────────────────────── #}
+        <div class="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
+            <h2 class="text-sm font-semibold text-gray-700 mb-1 uppercase tracking-wider">Required Documents</h2>
+            <p class="text-xs text-gray-400 mb-5">Upload all required documents. Max 10 MB per file.</p>
+
+            {% if use_institutional %}
+            {# ── Institutional branch: use configured Requirement_List ── #}
+            {% if institutional_docs %}
+            {% for entry in institutional_docs %}
+            <div class="mb-4 last:mb-0">
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                    {{ entry.title }} <span class="text-red-500">*</span>
+                    {% if entry.link %}
+                    <a href="{{ entry.link }}" target="_blank" rel="noopener noreferrer"
+                       class="text-xs text-navy hover:underline ml-2 font-normal">
+                        View reference ↗
+                    </a>
+                    {% endif %}
+                </label>
+                <input type="file"
+                       name="doc_{{ entry.title|lower|cut:' '|cut:'-' }}"
+                       accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                       class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-navy file:text-white hover:file:bg-navy-light transition-colors">
+            </div>
+            {% endfor %}
+            {% else %}
+            {# Empty state — list not yet configured #}
+            <div class="text-center py-8">
+                <svg class="w-10 h-10 text-gray-200 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <p class="text-sm text-gray-500">Renewal requirements have not been configured yet.</p>
+                <p class="text-xs text-gray-400 mt-1">Please contact the CSO Admin to set up the requirements.</p>
+            </div>
+            {% endif %}
+            {% else %}
+            {# ── Standard branch: use hardcoded RENEWAL_DOCS ── #}
+            {% for doc_type in renewal_docs %}
+            {% if doc_type == 'Accomplishment Reports' %}
+            {# Special slot: file upload OR compilation selection #}
+            <div class="mb-5 pb-5 border-b border-gray-100 last:border-0 last:mb-0 last:pb-0">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Accomplishment Reports <span class="text-red-500">*</span>
+                    <span class="text-xs text-gray-400 font-normal ml-1">— upload a file or select a compilation</span>
+                </label>
+
+                {# File upload option #}
+                <div class="mb-3">
+                    <p class="text-xs text-gray-500 mb-1.5">Option 1: Upload a file</p>
+                    <input type="file" name="doc_accomplishment_reports" id="doc_accomplishment_reports"
+                           accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                           class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-navy file:text-white hover:file:bg-navy-light transition-colors">
+                </div>
+
+                {# Compilation dropdown option #}
+                {% if compilations %}
+                <div>
+                    <p class="text-xs text-gray-500 mb-1.5">Option 2: Select an existing report compilation</p>
+                    <select name="compilation_id" id="compilation_id"
+                            class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-navy transition-colors bg-white">
+                        <option value="">— Select a compilation —</option>
+                        {% for comp in compilations %}
+                        <option value="{{ comp.id }}" {% if selected_compilation_id == comp.id|stringformat:"s" %}selected{% endif %}>{{ comp }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% else %}
+                <p class="text-xs text-gray-400 italic">No report compilations available for this organization.</p>
+                {% endif %}
+            </div>
+
+            {% else %}
+            {# Standard document slot #}
+            {% with field_name="doc_"|add:doc_type|lower|slugify|cut:"-" %}
+            <div class="mb-4 last:mb-0">
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                    {{ doc_type }} <span class="text-red-500">*</span>
+                </label>
+                <input type="file"
+                       name="doc_{{ doc_type|lower|cut:' '|cut:'-' }}"
+                       accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                       class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-navy file:text-white hover:file:bg-navy-light transition-colors">
+            </div>
+            {% endwith %}
+            {% endif %}
+            {% endfor %}
+            {% endif %}
+        </div>
+
+        {# ── Submit ───────────────────────────────────────────────────────── #}
+        <div class="flex gap-3">
+            <a href="{% url 'organizations:chairman_dashboard' org.id %}"
+               class="flex-1 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-600 font-medium text-center hover:bg-gray-50 transition-colors">
+                Cancel
+            </a>
+            {% if not use_institutional or institutional_docs %}
+            <button type="submit"
+                    class="flex-1 py-2.5 bg-navy text-white rounded-lg text-sm font-medium hover:bg-navy-light transition-colors">
+                Submit Renewal Application
+            </button>
+            {% endif %}
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var STORAGE_KEY = 'renewal_form_files_{{ org.id }}';
+    var MAX_STORE_SIZE = 8 * 1024 * 1024;
+
+    var fileInput = document.getElementById('doc_accomplishment_reports');
+    var compilationSelect = document.getElementById('compilation_id');
+
+    // Mutual exclusion between file and compilation
+    if (fileInput && compilationSelect) {
+        fileInput.addEventListener('change', function () {
+            if (this.files && this.files.length > 0) compilationSelect.value = '';
+        });
+        compilationSelect.addEventListener('change', function () {
+            if (this.value && fileInput) { fileInput.value = ''; hideBadge(fileInput); }
+        });
+    }
+
+    function showBadge(input, filename) {
+        var badge = input.parentNode.querySelector('.file-badge');
+        if (!badge) {
+            badge = document.createElement('p');
+            badge.className = 'file-badge text-xs text-green-600 mt-1 flex items-center gap-1';
+            input.parentNode.appendChild(badge);
+        }
+        badge.innerHTML = '<svg class="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>' + filename;
+        badge.style.display = 'flex';
+        input.style.outline = '';
+    }
+
+    function hideBadge(input) {
+        var badge = input.parentNode.querySelector('.file-badge');
+        if (badge) badge.style.display = 'none';
+    }
+
+    function saveFileToStorage(fieldName, file) {
+        if (file.size > MAX_STORE_SIZE) return;
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            try {
+                var store = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+                store[fieldName] = { name: file.name, type: file.type, data: e.target.result };
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+            } catch (ex) {}
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function restoreFiles() {
+        try {
+            var store = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+            document.querySelectorAll('input[type="file"]').forEach(function (input) {
+                var entry = store[input.name];
+                if (!entry) return;
+                try {
+                    var byteString = atob(entry.data.split(',')[1]);
+                    var ab = new ArrayBuffer(byteString.length);
+                    var ia = new Uint8Array(ab);
+                    for (var i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+                    var file = new File([ab], entry.name, { type: entry.type });
+                    var dt = new DataTransfer();
+                    dt.items.add(file);
+                    input.files = dt.files;
+                    showBadge(input, entry.name);
+                } catch (ex) {
+                    showBadge(input, entry.name + ' (re-select if needed)');
+                }
+            });
+        } catch (e) {}
+    }
+
+    document.querySelectorAll('input[type="file"]').forEach(function (input) {
+        input.addEventListener('change', function () {
+            if (input.files && input.files.length > 0) {
+                showBadge(input, input.files[0].name);
+                saveFileToStorage(input.name, input.files[0]);
+            } else {
+                hideBadge(input);
+                try {
+                    var store = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+                    delete store[input.name];
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+                } catch (e) {}
+            }
+        });
+    });
+
+    // Pre-submit validation
+    var form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function (e) {
+            var allInputs = form.querySelectorAll('input[type="file"]');
+            var missing = [];
+            var firstMissing = null;
+            allInputs.forEach(function (input) {
+                if (input.name === 'doc_accomplishment_reports') {
+                    var comp = document.getElementById('compilation_id');
+                    if ((!input.files || input.files.length === 0) && (!comp || !comp.value)) {
+                        missing.push(input);
+                        if (!firstMissing) firstMissing = input;
+                        input.style.outline = '2px solid #ef4444';
+                    } else { input.style.outline = ''; }
+                    return;
+                }
+                if (!input.files || input.files.length === 0) {
+                    missing.push(input);
+                    if (!firstMissing) firstMissing = input;
+                    input.style.outline = '2px solid #ef4444';
+                } else { input.style.outline = ''; }
+            });
+            if (missing.length > 0) {
+                e.preventDefault();
+                firstMissing.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                var alert = document.getElementById('client-val-alert');
+                if (!alert) {
+                    alert = document.createElement('div');
+                    alert.id = 'client-val-alert';
+                    alert.className = 'bg-red-50 border border-red-200 rounded-xl p-4 mb-4';
+                    form.insertBefore(alert, form.querySelector('.bg-white'));
+                }
+                alert.innerHTML = '<p class="text-sm font-medium text-red-700">' + missing.length + ' required document(s) missing — highlighted in red. Your other files are preserved.</p>';
+            } else {
+                try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+            }
+        });
+    }
+
+    {% if errors %}restoreFiles();{% endif %}
+})();
+</script>
+{% endblock %}

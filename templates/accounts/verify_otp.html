@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Verify Email — UB-CSO{% endblock %}
+
+{% block guest_content %}
+<div class="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+    <div class="w-full max-w-sm">
+
+        <!-- Logo -->
+        <div class="text-center mb-8">
+            <img src="{% static 'images/cso_logo.png' %}" alt="CSO Logo" class="w-16 h-16 rounded-full object-cover mx-auto mb-3">
+            <h1 class="text-navy text-xl font-bold">UB-CSO</h1>
+            <p class="text-gray-400 text-sm">University of Bohol</p>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-gray-200 p-6">
+
+            <!-- Icon -->
+            <div class="w-12 h-12 bg-light-blue-soft rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-6 h-6 text-light-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+            </div>
+
+            <h2 class="text-xl font-semibold text-gray-900 text-center mb-1">Check your email</h2>
+            <p class="text-gray-400 text-sm text-center mb-6">
+                We sent a 6-digit verification code to<br>
+                <span class="text-navy font-medium">{{ email }}</span>
+            </p>
+
+            <!-- Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                <div class="mb-4 p-3 rounded-lg text-sm
+                    {% if message.tags == 'error' %}bg-red-50 text-red-600 border border-red-200
+                    {% else %}bg-green-50 text-green-600 border border-green-200{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="POST" action="{% url 'accounts:verify_otp' %}">
+                {% csrf_token %}
+
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2 text-center">Enter verification code</label>
+                    <input type="text" name="otp_code" required
+                           maxlength="6" minlength="6"
+                           placeholder="000000"
+                           autofocus
+                           class="w-full border border-gray-200 rounded-lg px-4 py-3 text-2xl font-mono text-center tracking-widest focus:outline-none focus:border-navy transition-colors">
+                    <p class="text-xs text-gray-400 text-center mt-2">Code expires in 10 minutes</p>
+                </div>
+
+                <button type="submit"
+                        class="w-full bg-navy text-white py-2.5 rounded-lg text-sm font-medium hover:bg-navy-light transition-colors">
+                    Verify email
+                </button>
+            </form>
+
+            <div class="border-t border-gray-100 mt-4 pt-4">
+                <p class="text-center text-sm text-gray-400">
+                    Didn't receive a code?
+                </p>
+                <form method="POST" action="{% url 'accounts:resend_otp' %}" class="mt-2">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="w-full border border-gray-200 text-gray-600 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
+                        Resend verification code
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <p class="text-center text-xs text-gray-300 mt-6">
+            University of Bohol · City of Tagbilaran, Philippines
+        </p>
+    </div>
+</div>
+{% endblock %}

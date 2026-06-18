@@ -1,0 +1,518 @@
+<div id="discovery-widget" class="rounded-2xl overflow-hidden shadow-lg border border-gray-200">
+
+    <!-- Simplified header -->
+    <div class="relative px-5 py-4" style="
+        {% if tab == 'padlet' %}
+            {% if boards %}background: {{ boards.0.board_gradient }};
+            {% else %}background: linear-gradient(to bottom right, #f97316, #ea580c, #dc2626);{% endif %}
+        {% elif tab == 'elections' %}background: linear-gradient(to bottom right, #2563eb, #3b82f6, #4f46e5);
+        {% else %}background: linear-gradient(to bottom right, #facc15, #fbbf24, #f97316);{% endif %}
+    ">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-white text-lg font-bold leading-tight">
+                    {% if tab == 'padlet' %}
+                        {% if boards %}{{ boards.0.title }}
+                        {% else %}NoteBoard{% endif %}
+                    {% elif tab == 'elections' %}Live Elections
+                    {% else %}Leaderboard{% endif %}
+                </p>
+            </div>
+            <button onclick="cycleDiscoveryTab('{% if tab == 'padlet' %}elections{% elif tab == 'elections' %}leaderboard{% else %}padlet{% endif %}')"
+                    class="flex items-center gap-2 bg-white bg-opacity-20 hover:bg-opacity-30 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-all">
+                Next
+                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Content -->
+    <div class="bg-white px-4 pt-4 pb-3">
+
+        {% if tab == 'padlet' %}
+            {% if boards %}
+            <div data-slideshow="padlet">
+                {% for board in boards %}
+                <div class="padlet-slide {% if not forloop.first %}hidden{% endif %} group"
+                     data-gradient="{{ board.board_gradient }}"
+                     data-board-title="{{ board.title|escapejs }}"
+                     {% if not forloop.first %}style="display:none;"{% endif %}>
+                    <!-- Cover Image or Icon -->
+                    {% if board.cover_image %}
+                    <div class="w-full h-32 rounded-lg overflow-hidden mb-3 relative">
+                        <img src="{{ board.cover_image.url }}" alt="{{ board.title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
+                    </div>
+                    {% else %}
+                    <div class="w-full h-32 rounded-lg mb-3 flex items-center justify-center" style="background: linear-gradient(to bottom right, {{ board.board_accent }}22, {{ board.board_accent }}11);">
+                        <svg class="w-16 h-16 opacity-60" style="color: {{ board.board_accent }};" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Board Info -->
+                    <div class="flex items-start justify-between gap-2 mb-2">
+                        <span class="text-xs px-2.5 py-1 rounded-full font-semibold flex-shrink-0 border"
+                              style="color: {{ board.board_accent }}; border-color: {{ board.board_accent }}44; background: {{ board.board_accent }}11;">
+                            {% if board.scope == 'system' %}System-wide{% else %}{{ board.organization.name|truncatechars:20 }}{% endif %}
+                        </span>
+                        <div class="text-right flex-shrink-0">
+                            <p class="text-xs text-gray-400">{{ board.posts.count }} note{{ board.posts.count|pluralize }}</p>
+                            <p class="text-xs text-gray-400">{{ board.contributor_count }} contributor{{ board.contributor_count|pluralize }}</p>
+                        </div>
+                    </div>
+                    
+                    <h3 class="text-lg font-bold text-gray-900 mb-2 line-clamp-2 transition-colors">{{ board.title }}</h3>
+                    
+                    {% if board.description %}
+                    <p class="text-sm text-gray-500 mb-3 line-clamp-2">{{ board.description }}</p>
+                    {% endif %}
+                    
+                    <!-- Top Contributors -->
+                    {% if board.top_contributors %}
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="flex -space-x-2">
+                            {% for contributor in board.top_contributors %}
+                            {% if contributor.profile_picture %}
+                            <img src="{{ contributor.profile_picture.url }}" alt="{{ contributor.get_full_name }}" class="w-8 h-8 rounded-full border-2 border-white object-cover" title="{{ contributor.get_full_name }}">
+                            {% else %}
+                            <div class="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center" style="background: {{ board.board_accent }};" title="{{ contributor.get_full_name }}">
+                                <span class="text-white text-xs font-bold">{{ contributor.first_name|first }}{{ contributor.last_name|first }}</span>
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                        <span class="text-xs text-gray-400">Top contributors</span>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Recent Activity -->
+                    <div class="flex items-center gap-2 mb-4 text-xs text-gray-400">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span>Updated {{ board.updated_at|timesince }} ago</span>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="flex gap-2">
+                        <a href="{% url 'padlet:padlet_board' board.id %}"
+                           class="flex-1 inline-flex items-center justify-center gap-1.5 text-sm text-white font-semibold py-2.5 px-4 rounded-lg transition-all hover:shadow-lg hover:-translate-y-0.5 group"
+                           style="background: {{ board.board_accent }};">
+                            View Board
+                            <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                        {% if board.scope == 'system' or board.organization_id in user_org_ids %}
+                            {% if board.user_already_posted and not board.user_is_manager and not board.allow_multiple_posts %}
+                            <a href="{% url 'padlet:padlet_board' board.id %}"
+                               class="inline-flex items-center justify-center gap-1.5 text-sm border-2 font-semibold py-2.5 px-4 rounded-lg transition-all whitespace-nowrap"
+                               style="color: {{ board.board_accent }}; border-color: {{ board.board_accent }};">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
+                                My Note
+                            </a>
+                            {% else %}
+                            <a href="{% url 'padlet:padlet_board' board.id %}#post"
+                               class="inline-flex items-center justify-center gap-1.5 text-sm border-2 font-semibold py-2.5 px-4 rounded-lg transition-all whitespace-nowrap"
+                               style="color: {{ board.board_accent }}; border-color: {{ board.board_accent }};">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                                </svg>
+                                Post
+                            </a>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+                {% if boards|length > 1 %}
+                <div class="flex items-center justify-between mt-5 pt-4 border-t border-gray-100">
+                    <div class="padlet-dots flex gap-2">
+                        {% for b in boards %}
+                        <button type="button" onclick="window.jumpToSlide({{ forloop.counter0 }}, 'padlet-slide', 'padlet-dots', this); return false;"
+                                class="w-2.5 h-2.5 rounded-full transition-all {% if forloop.first %}bg-white w-8{% else %}bg-gray-300 hover:bg-gray-400{% endif %} cursor-pointer"></button>
+                        {% endfor %}
+                    </div>
+                    <button type="button"
+                            onclick="window.nextSlideWithColor(this, 'padlet-slide', 'padlet-dots'); return false;"
+                            style="min-width:44px; min-height:44px; touch-action:manipulation;"
+                            class="flex items-center justify-center gap-1 text-xs font-semibold text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-lg px-3 py-2 transition-colors cursor-pointer">
+                        Next
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="flex flex-col items-center justify-center py-12 text-center">
+                <div class="w-20 h-20 rounded-3xl bg-gradient-to-br from-orange-100 to-orange-50 flex items-center justify-center mb-4">
+                    <svg class="w-10 h-10 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </div>
+                <p class="text-base font-bold text-gray-900 mb-1">No boards yet</p>
+                <p class="text-sm text-gray-500 mb-4">Create your first noteboard and start collaborating</p>
+                <a href="{% url 'padlet:padlet_list' %}" class="inline-flex items-center gap-2 bg-orange-500 text-white px-4 py-2.5 rounded-lg hover:bg-orange-600 transition-all font-semibold text-sm hover:shadow-lg">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Create Board
+                </a>
+            </div>
+            {% endif %}
+
+        {% elif tab == 'elections' %}
+            {% if elections_data %}
+            <div data-slideshow="elections">
+                {% for item in elections_data %}
+                <div class="election-slide {% if not forloop.first %}hidden{% endif %}">
+                    <!-- Election header -->
+                    <div class="flex items-center justify-between mb-3">
+                        <div>
+                            <div class="flex items-center gap-1.5 mb-0.5">
+                                <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                                <span class="text-xs text-green-600 font-medium">Live</span>
+                            </div>
+                            <p class="text-sm font-semibold text-gray-900 line-clamp-1">{{ item.election.title }}</p>
+                            <p class="text-xs text-gray-400">{{ item.election.organization.name }}</p>
+                        </div>
+                        {% if item.has_voted %}
+                        <span class="flex-shrink-0 text-xs bg-green-50 text-green-600 border border-green-100 px-2 py-1 rounded-lg font-medium">Voted</span>
+                        {% else %}
+                        <a href="{% url 'elections:election_vote' item.election.id %}"
+                           class="flex-shrink-0 text-xs bg-orange text-white px-3 py-1.5 rounded-lg hover:bg-opacity-90 transition-colors font-semibold">
+                            Vote Now
+                        </a>
+                        {% endif %}
+                    </div>
+
+                    <!-- Voter participation bar -->
+                    <div class="bg-gray-50 rounded-xl px-3 py-2 mb-3">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs text-gray-500">Participation</span>
+                            <span class="text-xs font-bold text-gray-800">{{ item.total_votes_cast }} <span class="font-normal text-gray-400">/ {{ item.total_voters }}</span></span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3">
+                            {% if item.total_voters > 0 %}
+                            <div class="bg-orange h-3 rounded-full" style="width: {% widthratio item.total_votes_cast item.total_voters 100 %}%"></div>
+                            {% else %}
+                            <div class="bg-gray-200 h-3 rounded-full w-0"></div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Positions & candidates -->
+                    {% for position in item.positions|slice:":2" %}
+                    <div class="mb-2">
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{{ position.name }}</p>
+                        {% for candidate in position.candidates.all|slice:":5" %}
+                        <div class="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-gray-50 transition-colors">
+                            {% if candidate.user.profile_picture %}
+                            <img src="{{ candidate.user.profile_picture.url }}" class="w-6 h-6 rounded-full object-cover flex-shrink-0">
+                            {% else %}
+                            <div class="w-6 h-6 rounded-full bg-navy bg-opacity-10 flex items-center justify-center flex-shrink-0">
+                                <span class="text-navy font-bold" style="font-size:8px">{{ candidate.user.first_name|first }}{{ candidate.user.last_name|first }}</span>
+                            </div>
+                            {% endif %}
+                            <span class="text-xs text-gray-700 flex-1 truncate">{{ candidate.user.get_full_name }}</span>
+                            <span class="text-sm font-bold text-gray-700">{{ candidate.vote_count }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+                {% if elections_data|length > 1 %}
+                <div class="flex items-center justify-between mt-3 pt-2 border-t border-gray-100">
+                    <div class="elections-dots flex gap-1">{% for e in elections_data %}<div class="w-1.5 h-1.5 rounded-full {% if forloop.first %}bg-orange{% else %}bg-gray-200{% endif %}"></div>{% endfor %}</div>
+                    <button type="button"
+                            onclick="window.nextSlide(this,'election-slide','elections-dots','bg-orange'); return false;"
+                            style="min-width:44px;min-height:44px;touch-action:manipulation;"
+                            class="flex items-center justify-center rounded-lg text-gray-400 hover:text-orange hover:bg-gray-50 transition-colors cursor-pointer">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+            {% else %}
+            {% if recent_results %}
+            <!-- No live elections — show recent results -->
+            <div data-slideshow="results">
+                {% for item in recent_results %}
+                <div class="results-slide {% if not forloop.first %}hidden{% endif %}">
+                    <div class="flex items-center gap-2 mb-3">
+                        <span class="text-xs bg-blue-50 text-blue-600 border border-blue-100 px-2 py-0.5 rounded-full font-medium">Results</span>
+                        <span class="text-xs text-gray-400 truncate">{{ item.election.organization.name }}</span>
+                    </div>
+                    <p class="text-sm font-semibold text-gray-900 mb-3 line-clamp-1">{{ item.election.title }}</p>
+                    {% for pos in item.positions_summary|slice:":3" %}
+                    <div class="mb-2">
+                        <p class="text-xs text-gray-400 mb-1">{{ pos.name }}</p>
+                        {% if pos.winner %}
+                        <div class="flex items-center gap-2 bg-green-50 rounded-lg px-2 py-1.5">
+                            <div class="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0"></div>
+                            <span class="text-xs font-semibold text-green-700 truncate">{{ pos.winner.name }}</span>
+                            <span class="text-xs text-green-500 ml-auto">{{ pos.winner.count }} vote{{ pos.winner.count|pluralize }}</span>
+                        </div>
+                        {% elif pos.is_tied %}
+                        <span class="text-xs text-orange font-medium">Tie — pending resolution</span>
+                        {% else %}
+                        <span class="text-xs text-gray-400">No votes cast</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    <a href="{% url 'elections:election_results' item.election.id %}" class="mt-2 inline-flex items-center gap-1 text-xs text-navy font-semibold hover:gap-2 transition-all">
+                        Full results <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </a>
+                </div>
+                {% endfor %}
+                {% if recent_results|length > 1 %}
+                <div class="flex items-center justify-between mt-3 pt-2 border-t border-gray-100">
+                    <div class="results-dots flex gap-1">{% for r in recent_results %}<div class="w-1.5 h-1.5 rounded-full {% if forloop.first %}bg-navy{% else %}bg-gray-200{% endif %}"></div>{% endfor %}</div>
+                    <button type="button"
+                            onclick="window.nextSlide(this,'results-slide','results-dots','bg-navy'); return false;"
+                            style="min-width:44px;min-height:44px;touch-action:manipulation;"
+                            class="flex items-center justify-center rounded-lg text-gray-400 hover:text-navy hover:bg-gray-50 transition-colors cursor-pointer">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="flex flex-col items-center justify-center py-8 text-center">
+                <div class="w-12 h-12 rounded-2xl bg-orange bg-opacity-5 flex items-center justify-center mb-3">
+                    <svg class="w-6 h-6 text-orange opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                </div>
+                <p class="text-sm font-medium text-gray-700 mb-0.5">No ongoing elections</p>
+                <p class="text-xs text-gray-400 mb-3">Check back when voting opens</p>
+                <a href="{% url 'elections:election_list' %}" class="text-xs text-navy font-semibold hover:underline">View all elections →</a>
+            </div>
+            {% endif %}
+            {% endif %}
+
+        {% else %}
+            {% if ranked %}
+            <div class="space-y-2">
+                {% for entry in ranked %}
+                <div class="flex items-center gap-3 px-2 py-2.5 rounded-xl hover:bg-gray-50 transition-colors">
+                    <!-- Rank medal -->
+                    <div class="w-7 text-center flex-shrink-0">
+                        {% if entry.rank == 1 %}<span class="text-xl leading-none">🥇</span>
+                        {% elif entry.rank == 2 %}<span class="text-xl leading-none">🥈</span>
+                        {% elif entry.rank == 3 %}<span class="text-xl leading-none">🥉</span>
+                        {% else %}<span class="text-xs font-bold text-gray-300">{{ entry.rank }}</span>
+                        {% endif %}
+                    </div>
+                    <!-- Org logo — larger -->
+                    {% if entry.org.logo %}
+                    <img src="{{ entry.org.logo.url }}" class="w-10 h-10 rounded-full object-cover flex-shrink-0 border border-gray-100 shadow-sm">
+                    {% else %}
+                    <div class="w-10 h-10 rounded-full bg-navy bg-opacity-10 flex items-center justify-center flex-shrink-0">
+                        <span class="text-navy font-bold text-xs">{{ entry.org.name|slice:":2"|upper }}</span>
+                    </div>
+                    {% endif %}
+                    <!-- Org name + thicker progress bar -->
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs font-semibold text-gray-900 truncate">{{ entry.org.name }}</p>
+                        <p class="text-xs text-gray-400 mb-1">{{ entry.report_count }} report{{ entry.report_count|pluralize }}</p>
+                        {% if ranked.0.report_count > 0 %}
+                        <div class="w-full bg-gray-100 rounded-full h-2.5">
+                            <div class="h-2.5 rounded-full {% if entry.rank == 1 %}bg-yellow-400{% elif entry.rank == 2 %}bg-gray-400{% elif entry.rank == 3 %}bg-orange{% else %}bg-navy bg-opacity-30{% endif %}"
+                                 style="width: {% widthratio entry.report_count ranked.0.report_count 100 %}%"></div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="mt-3 pt-2 border-t border-gray-100">
+                <a href="{% url 'reports:leaderboard' %}" class="inline-flex items-center gap-1 text-xs text-navy font-semibold hover:gap-2 transition-all">
+                    Full leaderboard <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </a>
+            </div>
+            {% else %}
+            <div class="flex flex-col items-center justify-center py-8 text-center">
+                <div class="w-12 h-12 rounded-2xl bg-yellow-50 flex items-center justify-center mb-3">
+                    <svg class="w-6 h-6 text-yellow-500 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                </div>
+                <p class="text-sm font-medium text-gray-700 mb-0.5">No rankings yet</p>
+                <p class="text-xs text-gray-400">Rankings appear when reports are approved</p>
+            </div>
+            {% endif %}
+        {% endif %}
+
+    </div>
+</div>
+
+<script>
+// Define functions in global scope to ensure they're accessible
+window.cycleDiscoveryTab = function(tab) {
+    ['discovery-widget-container', 'discovery-widget-container-mobile'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) htmx.ajax('GET', '{% url "core:discovery_widget" %}?tab=' + tab, { target: '#' + id, swap: 'innerHTML' });
+    });
+};
+
+// Initialize slideshow state globally
+if (!window.slideshowState) {
+    window.slideshowState = {};
+}
+
+// Store board gradients and titles for color/title switching when sliding
+window.boardGradients = [
+    {% for board in boards %}'{{ board.board_gradient|escapejs }}'{% if not forloop.last %},{% endif %}{% endfor %}
+];
+window.boardTitles = [
+    {% for board in boards %}'{{ board.title|escapejs }}'{% if not forloop.last %},{% endif %}{% endfor %}
+];
+
+window.nextSlide = function(contextEl, slideClass, dotClass, activeColor) {
+    const container = contextEl.closest('[data-slideshow]');
+    if (!container) return;
+    const slides = container.querySelectorAll('.' + slideClass);
+    const dots = container.querySelectorAll('.' + dotClass + ' > div');
+    if (slides.length < 2) return;
+    const key = container.dataset.slideshow;
+    if (window.slideshowState[key] === undefined) window.slideshowState[key] = 0;
+    const prev = window.slideshowState[key];
+    slides[prev].classList.add('hidden');
+    if (dots[prev]) dots[prev].className = 'w-1.5 h-1.5 rounded-full bg-gray-200';
+    window.slideshowState[key] = (prev + 1) % slides.length;
+    const curr = window.slideshowState[key];
+    slides[curr].classList.remove('hidden');
+    if (dots[curr]) dots[curr].className = 'w-1.5 h-1.5 rounded-full ' + activeColor;
+};
+
+// Function for padlet slides with color switching based on board's actual gradient
+window.nextSlideWithColor = function(contextEl, slideClass, dotClass) {
+    const container = contextEl ? contextEl.closest('[data-slideshow]') : document.querySelector('[data-slideshow="padlet"]');
+    if (!container) return;
+    const slides = container.querySelectorAll('.' + slideClass);
+    const dots = container.querySelectorAll('.' + dotClass + ' > button');
+    if (slides.length < 2) return;
+    const key = container.dataset.slideshow;
+    if (window.slideshowState[key] === undefined) window.slideshowState[key] = 0;
+    const prev = window.slideshowState[key];
+    slides[prev].classList.add('hidden');
+    slides[prev].style.display = 'none';
+    if (dots[prev]) dots[prev].className = 'w-2.5 h-2.5 rounded-full transition-all bg-gray-300 hover:bg-gray-400 cursor-pointer';
+    window.slideshowState[key] = (prev + 1) % slides.length;
+    const curr = window.slideshowState[key];
+    slides[curr].classList.remove('hidden');
+    slides[curr].style.display = '';
+
+    // Read gradient and title directly from the slide's data attributes
+    const gradient = window.boardGradients[curr] || slides[curr].dataset.gradient || '';
+    const title = window.boardTitles[curr] || slides[curr].dataset.boardTitle || '';
+
+    // Dot color: use a neutral indicator (gradient-aware dots are hard to do generically)
+    if (dots[curr]) dots[curr].className = 'w-2.5 h-2.5 rounded-full transition-all bg-white w-8 cursor-pointer';
+
+    // Find the header of THIS specific widget (handles dual desktop/mobile containers)
+    const widgetEl = container.closest('#discovery-widget');
+    const header = widgetEl ? widgetEl.querySelector(':scope > div:first-child') : null;
+    if (header && gradient) {
+        header.style.background = gradient;
+    }
+
+    // Update title text
+    const titleEl = header ? header.querySelector('p.text-lg') : null;
+    if (titleEl && title) {
+        titleEl.textContent = title;
+    }
+};
+
+// Jump to specific slide
+window.jumpToSlide = function(index, slideClass, dotClass, contextEl) {
+    // Use contextEl to find the correct widget instance (handles desktop+mobile dual rendering)
+    const container = contextEl
+        ? contextEl.closest('[data-slideshow]')
+        : document.querySelector('[data-slideshow="padlet"]');
+    if (!container) return;
+    const slides = container.querySelectorAll('.' + slideClass);
+    const dots = container.querySelectorAll('.' + dotClass + ' > button');
+    if (slides.length < 2) return;
+    const key = container.dataset.slideshow;
+    const prev = window.slideshowState[key] || 0;
+
+    // Hide previous slide
+    slides[prev].classList.add('hidden');
+    slides[prev].style.display = 'none';
+    if (dots[prev]) dots[prev].className = 'w-2.5 h-2.5 rounded-full transition-all bg-gray-300 hover:bg-gray-400 cursor-pointer';
+
+    // Show new slide
+    window.slideshowState[key] = index;
+    slides[index].classList.remove('hidden');
+    slides[index].style.display = '';
+
+    // Read gradient and title directly from the slide's data attributes
+    const gradient = window.boardGradients[index] || slides[index].dataset.gradient || '';
+    const title = window.boardTitles[index] || slides[index].dataset.boardTitle || '';
+
+    if (dots[index]) dots[index].className = 'w-2.5 h-2.5 rounded-full transition-all bg-white w-8 cursor-pointer';
+
+    // Find the header of THIS specific widget
+    const widgetEl = container.closest('#discovery-widget');
+    const header = widgetEl ? widgetEl.querySelector(':scope > div:first-child') : null;
+    if (header && gradient) {
+        header.style.background = gradient;
+    }
+
+    // Update title text
+    const titleEl = header ? header.querySelector('p.text-lg') : null;
+    if (titleEl && title) {
+        titleEl.textContent = title;
+    }
+};
+
+// Auto-slideshow disabled for padlet boards — manual navigation only (Next button + swipe)
+function initDiscoverySlideshows() {
+    // Add swipe support for padlet slideshow
+    var padletContainer = document.querySelector('[data-slideshow="padlet"]');
+    if (padletContainer && !padletContainer._swipeInit) {
+        padletContainer._swipeInit = true;
+        var startX = 0;
+        padletContainer.addEventListener('touchstart', function(e) {
+            startX = e.touches[0].clientX;
+        }, { passive: true });
+        padletContainer.addEventListener('touchend', function(e) {
+            var dx = e.changedTouches[0].clientX - startX;
+            if (Math.abs(dx) > 40) {
+                // swipe left = next, swipe right = prev (for now just next in both directions since there are only 2 boards)
+                window.nextSlideWithColor(null, 'padlet-slide', 'padlet-dots');
+            }
+        }, { passive: true });
+    }
+}
+
+// Clear old timers when widget reloads
+window._padletTimer = null;
+window._electionsTimer = null;
+window._resultsTimer = null;
+
+// Run immediately
+initDiscoverySlideshows();
+
+// Also re-run after any HTMX swap into the widget containers
+document.addEventListener('htmx:afterSwap', function(e) {
+    if (e.detail.target.id === 'discovery-widget-container' || e.detail.target.id === 'discovery-widget-container-mobile') {
+        window._padletTimer = null;
+        window._electionsTimer = null;
+        window._resultsTimer = null;
+        initDiscoverySlideshows();
+    }
+});
+</script>

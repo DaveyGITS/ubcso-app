@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Organization Category — UB-CSO Admin{% endblock %}
+{% block breadcrumb %}Edit Organization Category{% endblock %}
+{% block mobile_title %}Edit Category{% endblock %}
+
+{% block content %}
+<div class="fixed top-0 left-0 pointer-events-none" style="z-index:1;width:70%;height:60%;background:radial-gradient(ellipse at 0% 0%, rgba(34,119,224,0.69) 0%, rgba(93,173,226,0.18) 30%, transparent 70%);"></div>
+<div class="max-w-2xl mx-auto relative" style="z-index:2;">
+
+    <div class="flex items-center gap-3 mb-6">
+        <a href="{% url 'organizations:admin_organizations' %}" class="text-gray-400 hover:text-gray-600 transition-colors">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+        </a>
+        <h1 class="text-xl font-semibold text-gray-900">Edit Organization Category</h1>
+    </div>
+
+    {# ── Organization Info ──────────────────────────────────────────────────── #}
+    <div class="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
+        <div class="grid grid-cols-2 gap-6 mb-6">
+            <div>
+                <dt class="text-xs text-gray-400 uppercase tracking-wider mb-1">Organization Name</dt>
+                <dd class="text-gray-900 font-medium">{{ org.name }}</dd>
+            </div>
+            <div>
+                <dt class="text-xs text-gray-400 uppercase tracking-wider mb-1">Current Category</dt>
+                <dd>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                        {% if org.category == 'student' %}bg-blue-100 text-blue-800
+                        {% elif org.category == 'ub_chapter' %}bg-purple-100 text-purple-800
+                        {% elif org.category == 'institutional' %}bg-green-100 text-green-800
+                        {% endif %}">
+                        {{ org.get_category_display }}
+                    </span>
+                </dd>
+            </div>
+            <div>
+                <dt class="text-xs text-gray-400 uppercase tracking-wider mb-1">Status</dt>
+                <dd class="text-gray-700">{{ org.get_status_display }}</dd>
+            </div>
+            <div>
+                <dt class="text-xs text-gray-400 uppercase tracking-wider mb-1">Created</dt>
+                <dd class="text-gray-700">{{ org.date_created|date:"M d, Y" }}</dd>
+            </div>
+        </div>
+    </div>
+
+    {# ── Info Banner ────────────────────────────────────────────────────────── #}
+    <div class="bg-light-blue bg-opacity-10 border border-light-blue border-opacity-20 rounded-xl p-4 mb-6">
+        <div class="flex gap-3">
+            <svg class="w-5 h-5 text-light-blue flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <div>
+                <p class="text-sm font-medium text-light-blue">Category Definitions</p>
+                <ul class="text-xs text-gray-500 mt-2 space-y-1">
+                    <li><strong>Student Organization:</strong> Regular student organizations</li>
+                    <li><strong>UB Chapter:</strong> Chapters of national organizations</li>
+                    <li><strong>Institutional:</strong> Administrative organizations (SSG, official publications, etc.)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    {# ── Category Selection ─────────────────────────────────────────────────── #}
+    <div class="bg-white rounded-2xl border border-gray-200 p-6">
+        <h2 class="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wider">Change Category</h2>
+
+        <form method="POST" action="{% url 'organizations:admin_edit_org_category' org.id %}">
+            {% csrf_token %}
+
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-3">Select New Category <span class="text-red-500">*</span></label>
+                
+                <div class="space-y-3">
+                    {% for value, label in category_choices %}
+                    <label class="flex items-center p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors
+                        {% if org.category == value %}bg-blue-50 border-blue-300{% endif %}">
+                        <input type="radio" name="category" value="{{ value }}" 
+                               {% if org.category == value %}checked{% endif %}
+                               class="w-4 h-4 accent-navy">
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-gray-900">{{ label }}</p>
+                            {% if value == 'student' %}
+                            <p class="text-xs text-gray-500 mt-0.5">Regular student organizations</p>
+                            {% elif value == 'ub_chapter' %}
+                            <p class="text-xs text-gray-500 mt-0.5">Chapters of national organizations</p>
+                            {% elif value == 'institutional' %}
+                            <p class="text-xs text-gray-500 mt-0.5">Administrative organizations (SSG, official publications, etc.)</p>
+                            {% endif %}
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="flex gap-3">
+                <a href="{% url 'organizations:admin_organizations' %}"
+                   class="flex-1 px-6 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors text-center">
+                    Cancel
+                </a>
+                <button type="submit"
+                        class="flex-1 px-6 py-2.5 bg-navy text-white rounded-lg text-sm font-medium hover:bg-navy-light transition-colors">
+                    Update Category
+                </button>
+            </div>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,515 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Board — NoteBoard — UB-CSO{% endblock %}
+{% block breadcrumb %}NoteBoard / Create Board{% endblock %}
+{% block mobile_title %}New Board{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
+<style>
+/* ── Red glow ── */
+.nb-glow {
+    position: fixed;
+    top: 0; left: 0;
+    width: 70%; height: 60%;
+    background: radial-gradient(ellipse at 0% 0%, rgba(220, 38, 38, 0.55) 0%, rgba(239, 100, 60, 0.18) 30%, transparent 70%);
+    pointer-events: none;
+    z-index: 1;
+}
+/* ── Cork wrapper ── */
+.cork-wrapper {
+    background-color: #c4974a;
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Crect width='8' height='8' fill='%23c4974a'/%3E%3Ccircle cx='1' cy='1' r='0.7' fill='rgba(0,0,0,0.1)'/%3E%3Ccircle cx='5' cy='3' r='0.5' fill='rgba(0,0,0,0.07)'/%3E%3Ccircle cx='3' cy='6' r='0.6' fill='rgba(0,0,0,0.09)'/%3E%3Ccircle cx='7' cy='7' r='0.4' fill='rgba(0,0,0,0.06)'/%3E%3Cline x1='0' y1='2' x2='8' y2='3' stroke='rgba(0,0,0,0.04)' stroke-width='0.5'/%3E%3Cline x1='0' y1='5' x2='8' y2='6' stroke='rgba(255,255,255,0.06)' stroke-width='0.5'/%3E%3Crect x='2' y='4' width='1' height='0.3' fill='rgba(0,0,0,0.05)' rx='0.1'/%3E%3Crect x='5' y='1' width='1.5' height='0.3' fill='rgba(0,0,0,0.04)' rx='0.1'/%3E%3C/svg%3E"),
+        radial-gradient(ellipse at 20% 20%, rgba(210,160,80,0.4) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 80%, rgba(160,110,40,0.3) 0%, transparent 50%);
+    border: 3px solid #8a6020;
+    box-shadow: inset 0 0 18px rgba(0,0,0,0.2), inset 0 0 4px rgba(0,0,0,0.1), 0 6px 20px rgba(0,0,0,0.28);
+    border-radius: 1.25rem;
+    padding: 0.625rem;
+    position: relative;
+    margin-top: 1.5rem;
+}
+#cork-pin {
+    position: absolute;
+    top: -10px; left: 50%;
+    transform: translateX(-50%);
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.45), inset 0 1px 3px rgba(255,255,255,0.35);
+    z-index: 10;
+    transition: background 0.25s ease;
+}
+#cork-pin.pin-red  { background: radial-gradient(circle at 40% 35%, #ff6b6b, #c0392b); }
+#cork-pin.pin-blue { background: radial-gradient(circle at 40% 35%, #5DADE2, #1B2A7B); }
+
+.cork-paper {
+    background: #fffef0;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    box-shadow: 2px 2px 8px rgba(0,0,0,0.12);
+    position: relative;
+    overflow: hidden;
+}
+.cork-paper::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 5px;
+    border-radius: 0 0 0.75rem 0.75rem;
+    opacity: 0.85;
+    transition: background 0.25s ease;
+}
+.cork-paper.tape-red::after  { background: linear-gradient(90deg, #c0392b 0%, #e74c3c 30%, #f39c12 70%, #f5c518 100%); }
+.cork-paper.tape-blue::after { background: linear-gradient(90deg, #1B2A7B 0%, #2D3F9E 40%, #5DADE2 100%); }
+
+.scope-option {
+    border: 2px solid #e5e7eb;
+    border-radius: 0.75rem;
+    padding: 0.75rem;
+    cursor: pointer;
+    background: #fff;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+.scope-option:hover        { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,0,0,0.08); }
+.scope-option.selected-red  { border-color: #c0392b; background: rgba(192,57,43,0.05); }
+.scope-option.selected-blue { border-color: #1B2A7B; background: rgba(27,42,123,0.05); }
+
+.paper-input {
+    width: 100%;
+    border: 1px solid #d1c9a8;
+    border-radius: 0.625rem;
+    padding: 0.625rem 0.75rem;
+    font-size: 0.875rem;
+    background: #fffdf5;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+.paper-input:hover { border-color: #b8a87a; background: #fffef8; }
+.paper-input:focus { border-color: #8a6020; box-shadow: 0 0 0 3px rgba(138,96,32,0.12); background: #fff; }
+
+#submit-btn {
+    transition: background 0.25s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+#submit-btn:hover  { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+#submit-btn:active { transform: translateY(0); box-shadow: none; }
+#submit-btn.btn-red  { background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%); }
+#submit-btn.btn-blue { background: linear-gradient(135deg, #1B2A7B 0%, #2D3F9E 100%); }
+
+.org-picker-wrap {
+    border: 1px solid #d1c9a8;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    background: #fffdf5;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.org-picker-wrap:hover       { border-color: #b8a87a; box-shadow: 0 2px 8px rgba(138,96,32,0.1); }
+.org-picker-wrap:focus-within { border-color: #8a6020; box-shadow: 0 0 0 3px rgba(138,96,32,0.12); }
+.org-picker-wrap select {
+    width: 100%; font-size: 0.875rem;
+    background: transparent; outline: none;
+    padding: 0.25rem 0.75rem; cursor: pointer;
+}
+.org-picker-wrap select option:hover,
+.org-picker-wrap select option:focus   { background: #fef3c7; }
+.org-picker-wrap select option:checked { background: #fde68a; font-weight: 600; }
+
+.img-upload-zone {
+    border: 2px dashed #fcd34d;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    text-align: center;
+    cursor: pointer;
+    background: rgba(254,243,199,0.3);
+    transition: border-color 0.2s, background 0.2s, transform 0.15s, box-shadow 0.15s;
+}
+.img-upload-zone:hover {
+    border-color: #f59e0b;
+    background: rgba(254,243,199,0.6);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(245,158,11,0.15);
+}
+.img-upload-zone:active { transform: translateY(0); }
+
+/* ── Crop modal ── */
+#crop-modal {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+#crop-modal.open { display: flex; }
+#crop-modal-card {
+    background: #1a1a1a;
+    border-radius: 1rem;
+    padding: 1.25rem;
+    width: 100%;
+    max-width: 680px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+#crop-img-el {
+    display: block;
+    max-width: 100%;
+}
+.cropper-container {
+    width: 100% !important;
+}
+/* Cropper.js overrides to match theme */
+.cropper-view-box,
+.cropper-face { border-radius: 0; }
+.cropper-line { background-color: #f59e0b; }
+.cropper-point { background-color: #f59e0b; width: 8px; height: 8px; }
+.cropper-view-box { outline: 2px solid #f59e0b; outline-color: #f59e0b; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="nb-glow"></div>
+<div class="relative" style="z-index: 2;">
+<div class="max-w-lg mx-auto">
+
+    <div class="mb-2">
+        <h1 class="text-xl font-semibold text-gray-900">Create a Board</h1>
+        <p class="text-sm text-gray-400 mt-0.5">Set up a new digital bulletin board</p>
+    </div>
+
+    {% if messages %}
+    {% for message in messages %}
+    <div class="mb-4 px-4 py-3 rounded-xl text-sm
+                {% if message.tags == 'error' %}bg-red-50 text-red-600 border border-red-200
+                {% else %}bg-green-50 text-green-700 border border-green-200{% endif %}">
+        {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <!-- Crop modal -->
+    <div id="crop-modal">
+        <div id="crop-modal-card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-semibold text-white">Crop Board Visual</p>
+                    <p class="text-xs text-gray-400 mt-0.5">Drag to move · drag handles to resize</p>
+                </div>
+                <span class="text-xs bg-amber-500 text-white px-2 py-0.5 rounded-full font-medium">3 : 1</span>
+            </div>
+            <div style="width: 100%; max-height: 60vh; overflow: hidden;">
+                <img id="crop-img-el" src="" alt="crop" style="display:block; max-width:100%; max-height:60vh; object-fit:contain;">
+            </div>
+            <div class="flex gap-3">
+                <button type="button" onclick="cancelCrop()"
+                        class="flex-1 border border-gray-600 text-gray-300 text-sm font-medium py-2 rounded-xl hover:bg-gray-800 transition-colors">
+                    Cancel
+                </button>
+                <button type="button" onclick="applyCrop()"
+                        class="flex-1 bg-amber-500 text-white text-sm font-medium py-2 rounded-xl hover:bg-amber-600 transition-colors">
+                    Use this crop
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cork wrapper -->
+    <div class="cork-wrapper" id="cork-wrapper">
+        <div id="cork-pin" class="pin-red"></div>
+        <div class="cork-paper tape-red" id="cork-paper">
+            <form method="POST" enctype="multipart/form-data" class="flex flex-col gap-5 pb-2" id="board-form">
+                {% csrf_token %}
+                <!-- Hidden field receives the cropped image data URL -->
+                <input type="hidden" name="cover_image_data" id="cover-image-data">
+
+                <!-- Title -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Board Title <span class="text-red-500">*</span></label>
+                    <input type="text" name="title" required maxlength="50"
+                           placeholder="e.g. Welcome Board, Org Announcements..."
+                           value="{{ form_data.title|default:'' }}"
+                           class="paper-input">
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Description <span class="text-gray-400 font-normal">(optional)</span></label>
+                    <textarea name="description" rows="3"
+                              placeholder="What is this board for?"
+                              class="paper-input resize-none">{{ form_data.description|default:'' }}</textarea>
+                </div>
+
+                <!-- Banner Image -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Board Visual <span class="text-gray-400 font-normal">(optional)</span></label>
+                    <div class="img-upload-zone" id="img-upload-zone"
+                         onclick="document.getElementById('cover-image-input').click()">
+                        <div id="cover-preview" class="hidden mb-2">
+                            <img id="cover-preview-img" src="" alt="Preview" class="w-full object-cover rounded-lg" style="aspect-ratio:3/1;">
+                            <button type="button" onclick="event.stopPropagation(); clearBanner()"
+                                    class="mt-2 text-xs text-red-500 hover:text-red-700 transition-colors">
+                                Remove image
+                            </button>
+                        </div>
+                        <div id="cover-placeholder">
+                            <svg class="w-8 h-8 text-amber-300 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            <p class="text-xs text-amber-700">Click to upload a board visual</p>
+                            <p class="text-xs text-amber-400 mt-0.5">JPG, PNG — will be cropped to 3:1</p>
+                        </div>
+                        <input type="file" id="cover-image-input" name="cover_image" accept="image/*" class="hidden"
+                               onchange="openCrop(this)">
+                    </div>
+                </div>
+
+                <!-- Scope -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Scope <span class="text-red-500">*</span></label>
+                    <div class="flex flex-col gap-2">
+                        {% if is_cso_admin %}
+                        <label class="scope-option selected-red flex items-start gap-3" id="scope-system-label">
+                            <input type="radio" name="scope" value="system"
+                                   class="sr-only" onchange="setScopeTheme('red')">
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">System-wide</p>
+                                <p class="text-xs text-gray-400">Visible to all registered students</p>
+                            </div>
+                        </label>
+                        {% endif %}
+                        {% if member_orgs %}
+                        <label class="scope-option flex items-start gap-3" id="scope-org-label">
+                            <input type="radio" name="scope" value="org"
+                                   class="sr-only" onchange="setScopeTheme('blue')">
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">Organization only</p>
+                                <p class="text-xs text-gray-400">Visible only to active members of the selected org</p>
+                            </div>
+                        </label>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if member_orgs %}
+                <div id="org-field" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Organization</label>
+                    <div class="org-picker-wrap">
+                        <select name="organization" size="4">
+                            <option value="">— Select organization —</option>
+                            {% for org in member_orgs %}
+                            <option value="{{ org.id }}" {% if form_data.org_id == org.id|stringformat:"s" %}selected{% endif %}>{{ org.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Board Color (org boards only) -->
+                <div id="color-field" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Board Color</label>
+                    <div id="color-swatches">
+                        {% include 'padlet/_color_swatches.html' with selected_color=form_data.board_color %}
+                    </div>
+                    <input type="hidden" name="board_color" id="board-color-input" value="{{ form_data.board_color|default:'' }}">
+                </div>
+
+                <!-- Allow multiple posts -->
+                <label class="flex items-center gap-3 cursor-pointer p-3 rounded-xl border border-amber-100 hover:bg-amber-50 transition-colors">
+                    <input type="checkbox" name="allow_multiple_posts"
+                           class="w-4 h-4 rounded border-gray-300 text-navy focus:ring-navy">
+                    <div>
+                        <p class="text-sm font-medium text-gray-700">Allow multiple posts per member</p>
+                        <p class="text-xs text-gray-400">By default each member can only post once</p>
+                    </div>
+                </label>
+
+                <!-- Visibility toggle (org boards only) -->
+                <div id="visibility-field" class="hidden">
+                    <label class="flex items-center gap-3 cursor-pointer p-3 rounded-xl border border-amber-100 hover:bg-amber-50 transition-colors">
+                        <input type="checkbox" name="is_public"
+                               class="w-4 h-4 rounded border-gray-300 text-navy focus:ring-navy">
+                        <div>
+                            <p class="text-sm font-medium text-gray-700">Make this board public</p>
+                            <p class="text-xs text-gray-400">All students can view, but only members can post</p>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="flex gap-3 pt-1">
+                    <button type="submit" id="submit-btn"
+                            class="btn-red flex-1 text-white text-sm font-medium py-2.5 rounded-xl transition-colors">
+                        Create Board
+                    </button>
+                    <a href="{% url 'padlet:padlet_list' %}"
+                       class="flex-1 text-center border border-amber-200 text-gray-600 text-sm font-medium py-2.5 rounded-xl hover:bg-amber-50 transition-colors">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+<script>
+// ── Scope / theme ──────────────────────────────────────────────────────────
+var IS_CSO_ADMIN = {% if is_cso_admin %}true{% else %}false{% endif %};
+var SAVED_SCOPE  = "{{ form_data.scope|default:'' }}";
+
+function setScopeTheme(color) {
+    var pin      = document.getElementById('cork-pin');
+    var paper    = document.getElementById('cork-paper');
+    var btn      = document.getElementById('submit-btn');
+    var orgField = document.getElementById('org-field');
+    var colorField = document.getElementById('color-field');
+    var visibilityField = document.getElementById('visibility-field');
+    var sysLabel = document.getElementById('scope-system-label');
+    var orgLabel = document.getElementById('scope-org-label');
+
+    if (color === 'red') {
+        pin.className   = 'pin-red';
+        paper.className = 'cork-paper tape-red';
+        btn.className   = 'btn-red flex-1 text-white text-sm font-medium py-2.5 rounded-xl transition-colors';
+        if (sysLabel) { sysLabel.classList.add('selected-red');    sysLabel.classList.remove('selected-blue'); }
+        if (orgLabel) { orgLabel.classList.remove('selected-red',  'selected-blue'); }
+        if (orgField)   orgField.classList.add('hidden');
+        if (colorField) colorField.classList.add('hidden');
+        if (visibilityField) visibilityField.classList.add('hidden');
+        // mark radio
+        var r = document.querySelector('input[name="scope"][value="system"]');
+        if (r) r.checked = true;
+    } else {
+        pin.className   = 'pin-blue';
+        paper.className = 'cork-paper tape-blue';
+        btn.className   = 'btn-blue flex-1 text-white text-sm font-medium py-2.5 rounded-xl transition-colors';
+        if (orgLabel) { orgLabel.classList.add('selected-blue');   orgLabel.classList.remove('selected-red'); }
+        if (sysLabel) { sysLabel.classList.remove('selected-red',  'selected-blue'); }
+        if (orgField)   orgField.classList.remove('hidden');
+        if (colorField) colorField.classList.remove('hidden');
+        if (visibilityField) visibilityField.classList.remove('hidden');
+        var r = document.querySelector('input[name="scope"][value="org"]');
+        if (r) r.checked = true;
+    }
+}
+
+// Init on page load
+(function() {
+    if (SAVED_SCOPE === 'org') {
+        setScopeTheme('blue');
+    } else if (!IS_CSO_ADMIN) {
+        setScopeTheme('blue');
+    } else {
+        setScopeTheme('red');
+    }
+})();
+
+// ── Banner image + crop (Cropper.js) ──────────────────────────────────────
+var COVER_KEY = 'nb_create_cover';
+var _cropper  = null;
+
+function openCrop(input) {
+    if (!input.files || !input.files[0]) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        var imgEl = document.getElementById('crop-img-el');
+        // Destroy previous cropper instance if any
+        if (_cropper) { _cropper.destroy(); _cropper = null; }
+        imgEl.src = e.target.result;
+        document.getElementById('crop-modal').classList.add('open');
+        document.body.style.overflow = 'hidden';
+        // Init Cropper.js after image loads
+        imgEl.onload = function() {
+            _cropper = new Cropper(imgEl, {
+                aspectRatio: 3 / 1,
+                viewMode: 1,          // restrict crop box to canvas
+                dragMode: 'move',
+                autoCropArea: 1,      // start with full-width crop
+                restore: false,
+                guides: true,
+                center: true,
+                highlight: false,
+                cropBoxMovable: true,
+                cropBoxResizable: true,
+                toggleDragModeOnDblclick: false,
+            });
+        };
+    };
+    reader.readAsDataURL(input.files[0]);
+    input.value = ''; // allow re-selecting same file
+}
+
+function applyCrop() {
+    if (!_cropper) return;
+    var canvas = _cropper.getCroppedCanvas({ width: 1200, height: 400 });
+    var dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+    try { localStorage.setItem(COVER_KEY, dataUrl); } catch(ex) {}
+    document.getElementById('cover-image-data').value = dataUrl;
+    showBannerPreview(dataUrl);
+    closeCropModal();
+}
+
+function cancelCrop() { closeCropModal(); }
+
+function closeCropModal() {
+    if (_cropper) { _cropper.destroy(); _cropper = null; }
+    document.getElementById('crop-modal').classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+function showBannerPreview(src) {
+    document.getElementById('cover-preview-img').src = src;
+    document.getElementById('cover-preview').classList.remove('hidden');
+    document.getElementById('cover-placeholder').classList.add('hidden');
+}
+
+function clearBanner() {
+    document.getElementById('cover-preview').classList.add('hidden');
+    document.getElementById('cover-placeholder').classList.remove('hidden');
+    document.getElementById('cover-image-data').value = '';
+    document.getElementById('cover-image-input').value = '';
+    try { localStorage.removeItem(COVER_KEY); } catch(ex) {}
+}
+
+// Restore preview on error reload
+{% if form_data %}
+(function() {
+    try {
+        var saved = localStorage.getItem(COVER_KEY);
+        if (saved) {
+            document.getElementById('cover-image-data').value = saved;
+            showBannerPreview(saved);
+        }
+    } catch(e) {}
+})();
+{% else %}
+try { localStorage.removeItem(COVER_KEY); } catch(e) {}
+{% endif %}
+
+// Clear storage 3s after submit (success redirects before that; errors reload with form_data)
+document.getElementById('board-form').addEventListener('submit', function() {
+    setTimeout(function() { try { localStorage.removeItem(COVER_KEY); } catch(e) {} }, 3000);
+});
+
+// ── Color swatch picker ───────────────────────────────────────────────────
+document.querySelectorAll('.color-swatch').forEach(function(sw) {
+    sw.addEventListener('click', function() {
+        document.querySelectorAll('.color-swatch').forEach(function(s) {
+            s.classList.remove('selected');
+        });
+        sw.classList.add('selected');
+        document.getElementById('board-color-input').value = sw.dataset.color;
+    });
+});
+// Pre-select saved color on error reload
+(function() {
+    var saved = document.getElementById('board-color-input').value;
+    if (saved) {
+        var sw = document.querySelector('.color-swatch[data-color="' + saved + '"]');
+        if (sw) sw.classList.add('selected');
+    }
+})();
+</script>
+{% endblock %}

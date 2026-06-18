@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Faculty Requests — Admin{% endblock %}
+{% block breadcrumb %}Admin / Faculty Requests{% endblock %}
+{% block mobile_title %}Faculty Requests{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+
+    <div class="flex items-center gap-3 mb-6">
+        <a href="{% url 'core:admin_panel' %}" class="text-gray-400 hover:text-gray-600 transition-colors">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        </a>
+        <h1 class="text-xl font-semibold text-gray-900">Faculty Account Requests</h1>
+    </div>
+
+    {% if messages %}
+    {% for message in messages %}
+    <div class="mb-4 p-3 rounded-lg text-sm {% if message.tags == 'error' %}bg-red-50 text-red-600 border border-red-200{% else %}bg-green-50 text-green-600 border border-green-200{% endif %}">
+        {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {% if faculty_requests %}
+    <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        {% for req in faculty_requests %}
+        <div class="p-4 border-b border-gray-50 last:border-b-0">
+            <div class="flex items-start justify-between gap-4">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap mb-1">
+                        <p class="text-sm font-semibold text-gray-900">{{ req.get_full_name }}</p>
+                        {% if req.status == 'pending_approval' %}
+                        <span class="text-xs bg-orange bg-opacity-10 text-orange px-2 py-0.5 rounded-full">Pending</span>
+                        {% elif req.status == 'approved' %}
+                        <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Approved</span>
+                        {% elif req.status == 'rejected' %}
+                        <span class="text-xs bg-red-50 text-red-500 px-2 py-0.5 rounded-full">Rejected</span>
+                        {% endif %}
+                    </div>
+                    <p class="text-xs text-gray-500">{{ req.email }}</p>
+                    <p class="text-xs text-gray-400 mt-0.5">
+                        Employee ID: {{ req.employee_id }} &nbsp;·&nbsp; {{ req.department }}
+                    </p>
+                    <p class="text-xs text-gray-300 mt-0.5">Submitted {{ req.created_at|date:"M d, Y" }}</p>
+                    {% if req.rejection_reason %}
+                    <p class="text-xs text-red-400 mt-1">Reason: {{ req.rejection_reason }}</p>
+                    {% endif %}
+                </div>
+
+                {% if req.status == 'pending_approval' %}
+                <div class="flex gap-2 flex-shrink-0">
+                    <form method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="request_id" value="{{ req.id }}">
+                        <input type="hidden" name="action" value="approve">
+                        <button type="submit"
+                                onclick="return confirm('Approve faculty account for {{ req.get_full_name }}?')"
+                                class="text-xs bg-navy text-white px-3 py-1.5 rounded-lg hover:bg-navy-light transition-colors font-medium">
+                            Approve
+                        </button>
+                    </form>
+                    <button type="button"
+                            onclick="openRejectModal('{{ req.id }}', '{{ req.get_full_name }}')"
+                            class="text-xs border border-red-200 text-red-400 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors">
+                        Reject
+                    </button>
+                </div>
+                {% elif req.status == 'approved' and req.reviewed_by %}
+                <p class="text-xs text-gray-400 flex-shrink-0">by {{ req.reviewed_by.get_full_name }}<br>{{ req.reviewed_at|date:"M d, Y" }}</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-20">
+        <svg class="w-12 h-12 text-gray-200 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <p class="text-gray-400">No faculty registration requests yet.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Reject modal -->
+<div id="reject-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+        <h3 class="text-base font-semibold text-gray-900 mb-1">Reject Request</h3>
+        <p class="text-sm text-gray-400 mb-4" id="reject-name"></p>
+        <form method="POST" id="reject-form">
+            {% csrf_token %}
+            <input type="hidden" name="request_id" id="reject-req-id">
+            <input type="hidden" name="action" value="reject">
+            <div class="mb-4">
+                <label class="block text-xs font-medium text-gray-600 mb-1">Reason <span class="text-gray-400">(optional)</span></label>
+                <textarea name="rejection_reason" rows="3"
+                          placeholder="Provide a reason for rejection..."
+                          class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy transition-colors resize-none"></textarea>
+            </div>
+            <div class="flex gap-2">
+                <button type="button" onclick="closeRejectModal()"
+                        class="flex-1 border border-gray-200 text-gray-500 text-sm py-2.5 rounded-lg hover:bg-gray-50 transition-colors">Cancel</button>
+                <button type="submit"
+                        class="flex-1 bg-red-500 text-white text-sm py-2.5 rounded-lg hover:bg-red-600 transition-colors font-medium">Reject</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openRejectModal(reqId, name) {
+    document.getElementById('reject-req-id').value = reqId;
+    document.getElementById('reject-name').textContent = name;
+    document.getElementById('reject-modal').classList.remove('hidden');
+}
+function closeRejectModal() {
+    document.getElementById('reject-modal').classList.add('hidden');
+}
+document.getElementById('reject-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeRejectModal();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% load static %}
+<div id="attachment-{{ attachment.id }}" class="flex items-center gap-2 text-xs">
+    {% if attachment.attachment_type == 'image' %}
+        <img src="{{ attachment.file.url }}" alt="{{ attachment.original_filename }}"
+             onclick="openLightbox('{{ attachment.file.url }}')"
+             class="h-20 w-auto rounded-lg object-cover border border-black border-opacity-10 cursor-pointer hover:opacity-90 hover:scale-105 transition-all"
+             title="Click to enlarge">
+    {% elif attachment.attachment_type == 'file' %}
+        <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        <a href="{{ attachment.file.url }}" download="{{ attachment.original_filename }}"
+           class="text-navy hover:underline truncate max-w-[140px]">
+            {{ attachment.original_filename|default:"Download file" }}
+        </a>
+    {% elif attachment.attachment_type == 'url' %}
+        <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+        </svg>
+        <a href="{{ attachment.url }}" target="_blank" rel="noopener noreferrer"
+           class="text-navy hover:underline truncate max-w-[140px]">
+            {{ attachment.url|truncatechars:40 }}
+        </a>
+    {% endif %}
+
+    {% if current_user == post.author or is_manager %}
+    <button type="button"
+            onclick="deleteAttachment{{ attachment.id }}()"
+            class="ml-auto flex-shrink-0 w-5 h-5 rounded-full bg-white bg-opacity-70 hover:bg-red-100 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors">
+        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+    </button>
+    <script>
+        function deleteAttachment{{ attachment.id }}() {
+            window.showConfirm('Remove this attachment?', 'Delete Attachment').then(function(confirmed) {
+                if (confirmed) {
+                    htmx.ajax('POST', '{% url "padlet:padlet_delete_attachment" attachment.id %}', {
+                        target: '#attachment-{{ attachment.id }}',
+                        swap: 'outerHTML',
+                        headers: {'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''}
+                    });
+                }
+            });
+        }
+    </script>
+    {% endif %}
+</div>

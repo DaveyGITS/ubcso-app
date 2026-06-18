@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Organization Registration Claims — UB-CSO Admin{% endblock %}
+{% block breadcrumb %}Organization Registration Claims{% endblock %}
+{% block mobile_title %}Org Registration Claims{% endblock %}
+
+{% block content %}
+<div class="fixed top-0 left-0 pointer-events-none" style="z-index:1;width:70%;height:60%;background:radial-gradient(ellipse at 0% 0%, rgba(34,119,224,0.69) 0%, rgba(93,173,226,0.18) 30%, transparent 70%);"></div>
+<div class="relative" style="z-index:2;">
+
+    <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-3">
+            <a href="{% url 'core:admin_panel' %}" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </a>
+            <div>
+                <h1 class="text-xl font-semibold text-gray-900">Organization Registration Claims</h1>
+                <p class="text-sm text-gray-400 mt-0.5">Review and approve existing organization registrations</p>
+            </div>
+        </div>
+    </div>
+
+    {# ── Status Filter ──────────────────────────────────────────────────────── #}
+    <div class="bg-white rounded-2xl border border-gray-200 p-4 mb-6">
+        <div class="flex gap-2 flex-wrap">
+            <a href="{% url 'organizations:admin_org_registration_panel' %}"
+               style="{% if not status_filter %}background:#1B2A7B;color:#fff;{% else %}background:#f3f4f6;color:#374151;{% endif %}"
+               class="px-4 py-2 rounded-lg text-sm font-medium hover:opacity-80 transition-opacity">
+                All
+            </a>
+            <a href="?status=pending"
+               style="{% if status_filter == 'pending' %}background:#ca8a04;color:#fff;{% else %}background:#f3f4f6;color:#374151;{% endif %}"
+               class="px-4 py-2 rounded-lg text-sm font-medium hover:opacity-80 transition-opacity">
+                Pending
+            </a>
+            <a href="?status=approved"
+               style="{% if status_filter == 'approved' %}background:#16a34a;color:#fff;{% else %}background:#f3f4f6;color:#374151;{% endif %}"
+               class="px-4 py-2 rounded-lg text-sm font-medium hover:opacity-80 transition-opacity">
+                Approved
+            </a>
+            <a href="?status=rejected"
+               style="{% if status_filter == 'rejected' %}background:#dc2626;color:#fff;{% else %}background:#f3f4f6;color:#374151;{% endif %}"
+               class="px-4 py-2 rounded-lg text-sm font-medium hover:opacity-80 transition-opacity">
+                Rejected
+            </a>
+        </div>
+    </div>
+
+    {# ── Registrations — mobile-friendly cards ─────────────────────────────── #}
+    {% if registrations %}
+    <div class="space-y-3">
+        {% for reg in registrations %}
+        <div class="bg-white rounded-2xl border border-gray-200 p-4">
+            <div class="flex items-start justify-between gap-3 mb-3">
+                <div class="min-w-0">
+                    <p class="font-semibold text-gray-900 text-sm leading-tight">{{ reg.org_name }}</p>
+                    <p class="text-xs text-gray-400 mt-0.5">Submitted {{ reg.created_at|date:"M d, Y" }}</p>
+                </div>
+                {# Status badge #}
+                {% if reg.status == 'pending' %}
+                <span style="background:#fefce8;color:#a16207;" class="text-xs px-2.5 py-0.5 rounded-full font-medium flex-shrink-0">Pending</span>
+                {% elif reg.status == 'approved' %}
+                <span style="background:#f0fdf4;color:#15803d;" class="text-xs px-2.5 py-0.5 rounded-full font-medium flex-shrink-0">Approved</span>
+                {% elif reg.status == 'rejected' %}
+                <span style="background:#fef2f2;color:#dc2626;" class="text-xs px-2.5 py-0.5 rounded-full font-medium flex-shrink-0">Rejected</span>
+                {% endif %}
+            </div>
+            <div class="grid grid-cols-2 gap-x-4 gap-y-1.5 mb-3 text-xs">
+                <div>
+                    <span class="text-gray-400">Category</span>
+                    <div class="mt-0.5">
+                        {% if reg.category == 'student' %}
+                        <span style="background:#eff6ff;color:#1d4ed8;" class="px-2 py-0.5 rounded-full font-medium">{{ reg.get_category_display }}</span>
+                        {% elif reg.category == 'ub_chapter' %}
+                        <span style="background:#faf5ff;color:#7e22ce;" class="px-2 py-0.5 rounded-full font-medium">{{ reg.get_category_display }}</span>
+                        {% elif reg.category == 'institutional' %}
+                        <span style="background:#f0fdf4;color:#15803d;" class="px-2 py-0.5 rounded-full font-medium">{{ reg.get_category_display }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div>
+                    <span class="text-gray-400">Submitted by</span>
+                    <p class="text-gray-700 font-medium mt-0.5">{{ reg.submitted_by.get_full_name }}</p>
+                </div>
+                <div>
+                    <span class="text-gray-400">Proposed chairman</span>
+                    {% if reg.proposed_chairman %}
+                    <p class="text-gray-700 font-medium mt-0.5">{{ reg.proposed_chairman.get_full_name }}</p>
+                    <p class="text-gray-400 mt-0">{{ reg.proposed_chairman.student_id }}</p>
+                    {% else %}
+                    <p class="text-gray-400 mt-0.5">Not specified</p>
+                    {% endif %}
+                </div>
+            </div>
+            <a href="{% url 'organizations:admin_review_org_registration' reg.id %}"
+               style="background:#1B2A7B;color:#fff;"
+               class="block w-full text-center py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">
+                Review
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="bg-white rounded-2xl border border-gray-200 p-8 text-center">
+        <svg class="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+        </svg>
+        <p class="text-gray-500 text-sm">No organization registration claims found.</p>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

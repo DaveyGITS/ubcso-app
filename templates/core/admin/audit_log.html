@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}Audit Log — Admin Panel{% endblock %}
+{% block breadcrumb %}Admin Panel / Audit Log{% endblock %}
+{% block mobile_title %}Audit Log{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+
+  <div class="mb-6">
+    <a href="{% url 'core:admin_panel' %}" class="text-sm text-gray-500 hover:text-navy transition-colors">← Admin Panel</a>
+    <h1 class="text-xl font-bold text-navy mt-1">Audit Log</h1>
+    <p class="text-sm text-gray-500 mt-0.5">Last 200 system actions</p>
+  </div>
+
+  {% if logs %}
+  <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <div class="divide-y divide-gray-50">
+      {% for log in logs %}
+      <div class="px-5 py-3 flex items-start gap-4">
+        <!-- Actor avatar -->
+        <div class="flex-shrink-0 mt-0.5">
+          {% if log.actor and log.actor.profile_picture %}
+            <img src="{{ log.actor.profile_picture.url }}" class="w-7 h-7 rounded-full object-cover">
+          {% else %}
+            <div class="w-7 h-7 rounded-full bg-navy bg-opacity-10 flex items-center justify-center">
+              <span class="text-navy font-bold" style="font-size:9px">
+                {% if log.actor %}{{ log.actor.first_name|first }}{{ log.actor.last_name|first }}{% else %}?{% endif %}
+              </span>
+            </div>
+          {% endif %}
+        </div>
+        <!-- Log details -->
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-sm font-medium text-gray-900">
+              {% if log.actor %}{{ log.actor.get_full_name }}{% else %}System{% endif %}
+            </span>
+            <span class="text-xs bg-navy bg-opacity-10 text-navy px-2 py-0.5 rounded-full font-medium">{{ log.action }}</span>
+            {% if log.target_type %}
+            <span class="text-xs text-gray-400">{{ log.target_type }}{% if log.target_id %} #{{ log.target_id }}{% endif %}</span>
+            {% endif %}
+          </div>
+          {% if log.details %}
+          <p class="text-xs text-gray-500 mt-0.5 line-clamp-1">{{ log.details }}</p>
+          {% endif %}
+        </div>
+        <!-- Timestamp -->
+        <span class="text-xs text-gray-400 flex-shrink-0 mt-0.5">{{ log.created_at|date:"M d, g:i A" }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% else %}
+  <div class="bg-white rounded-xl border border-gray-200 p-12 text-center">
+    <svg class="w-12 h-12 text-gray-200 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+    </svg>
+    <p class="text-sm text-gray-400">No audit log entries yet.</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

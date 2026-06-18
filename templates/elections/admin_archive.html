@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}Election Archive — UB-CSO{% endblock %}
+{% block breadcrumb %}Admin / Election Archive{% endblock %}
+{% block mobile_title %}Election Archive{% endblock %}
+
+{% block content %}
+<!-- Blue glow — fixed to viewport, originates from top-left corner -->
+<div class="fixed top-0 left-0 pointer-events-none" style="
+    z-index: 1;
+    width: 70%;
+    height: 60%;
+    background: radial-gradient(ellipse at 0% 0%, rgba(34, 119, 224, 0.69) 0%, rgba(93,173,226,0.18) 30%, transparent 70%);
+"></div>
+
+<div class="relative" style="z-index: 2;">
+<div class="max-w-4xl mx-auto">
+
+  <div class="mb-6">
+    <h1 class="text-xl font-bold text-navy">Election Archive</h1>
+    <p class="text-sm text-gray-500 mt-0.5">All completed elections with released results</p>
+  </div>
+
+  {% if elections %}
+  <div class="space-y-3">
+    {% for election in elections %}
+    <a href="{% url 'elections:admin_archive_detail' election.id %}"
+       class="block bg-white rounded-xl border border-gray-200 p-4 hover:border-light-blue transition-colors">
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-semibold text-navy truncate">{{ election.title }}</p>
+          <p class="text-xs text-gray-500 mt-0.5">{{ election.organization.name }}</p>
+          <p class="text-xs text-gray-400 mt-0.5">
+            Released {{ election.results_released_at|date:"M d, Y" }}
+            {% if election.results_released_by %}by {{ election.results_released_by.get_full_name }}{% endif %}
+          </p>
+        </div>
+        <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="bg-white rounded-xl border border-gray-200 p-12 text-center">
+    <p class="text-gray-400 text-sm">No archived elections yet.</p>
+  </div>
+  {% endif %}
+
+</div><!-- end max-w-4xl -->
+</div><!-- end relative z-2 -->
+{% endblock %}
