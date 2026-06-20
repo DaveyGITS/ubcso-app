@@ -29,7 +29,16 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,testserver').split(',')
+# Default allowed hosts
+allowed_hosts_default = 'localhost,127.0.0.1,testserver'
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', allowed_hosts_default).split(',')
+
+# Add *.railway.app domains automatically
+railway_host = os.getenv('RAILWAY_STATIC_URL', '')
+if railway_host:
+    ALLOWED_HOSTS.append(railway_host.split('//')[1].split(':')[0])  # Extract domain
+if 'RAILWAY' in os.environ:
+    ALLOWED_HOSTS.extend(['*.railway.app', '.railway.app', 'railway.app'])
 
 
 # Application definition
@@ -85,26 +94,60 @@ WSGI_APPLICATION = 'ubcso.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-# Use Railway's DATABASE_URL if available (production), otherwise use local env vars
-if os.getenv('RAILWAY_ENVIRONMENT') == 'production':
+import dj_database_url
+
+# DEBUG: Print database environment variables
+print("=== DATABASE CONFIGURATION ===")
+print(f"DATABASE_URL: {'SET' if os.getenv('DATABASE_URL') else 'NOT SET'}")
+print(f"RAILWAY_ENVIRONMENT: {os.getenv('RAILWAY_ENVIRONMENT')}")
+
+# Check PostgreSQL individual variables (Railway uses these)
+pg_user = os.getenv('PGUSER')
+pg_password = os.getenv('PGPASSWORD')
+pg_host = os.getenv('PGHOST')
+pg_port = os.getenv('PGPORT')
+pg_database = os.getenv('PGDATABASE')
+
+print(f"PGUSER: {'SET' if pg_user else 'NOT SET'}")
+print(f"PGPASSWORD: {'SET' if pg_password else 'NOT SET'}")
+print(f"PGHOST: {'SET' if pg_host else 'NOT SET'}")
+print(f"PGPORT: {'SET' if pg_port else 'NOT SET'}")
+print(f"PGDATABASE: {'SET' if pg_database else 'NOT SET'}")
+
+# Build DATABASE_URL from PostgreSQL variables if available
+if all([pg_user, pg_password, pg_host, pg_port, pg_database]):
+    database_url = f"postgresql://{pg_user}:{pg_password}@{pg_host}:{pg_port}/{pg_database}"
+    print(f"Built DATABASE_URL from PostgreSQL variables")
     DATABASES = {
         'default': dj_database_url.config(
-            default=os.getenv('DATABASE_URL'),
+            default=database_url,
             conn_max_age=600,
             conn_health_checks=True,
         )
     }
 else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('DB_NAME'),
-            'USER': os.getenv('DB_USER'),
-            'PASSWORD': os.getenv('DB_PASSWORD'),
-            'HOST': os.getenv('DB_HOST'),
-            'PORT': os.getenv('DB_PORT'),
+    # Check for existing DATABASE_URL
+    database_url = os.getenv('DATABASE_URL')
+    if database_url:
+        DATABASES = {
+            'default': dj_database_url.config(
+                default=database_url,
+                conn_max_age=600,
+                conn_health_checks=True,
+            )
         }
-    }
+    else:
+        # PostgreSQL production configuration
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': os.getenv('PGDATABASE', 'railway'),
+                'USER': os.getenv('PGUSER', 'postgres'),
+                'PASSWORD': os.getenv('PGPASSWORD', ''),
+                'HOST': os.getenv('PGHOST', 'postgres.railway.internal'),
+                'PORT': os.getenv('PGPORT', '5432'),
+            }
+        }
 
 
 # Password validation
