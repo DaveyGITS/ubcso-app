@@ -13,6 +13,7 @@ redis = "*"
 openpyxl = "*"
 django-ratelimit = "*"
 dj-database-url = "*"
+gunicorn = "*"
 
 [dev-packages]
 hypothesis = "*"
