@@ -12,6 +12,7 @@ celery = "*"
 redis = "*"
 openpyxl = "*"
 django-ratelimit = "*"
+dj-database-url = "*"
 
 [dev-packages]
 hypothesis = "*"
