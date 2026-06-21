@@ -35,10 +35,14 @@ ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', allowed_hosts_default).split(',')
 
 # Add *.railway.app domains automatically
 railway_host = os.getenv('RAILWAY_STATIC_URL', '')
-if railway_host:
+if railway_host and '//' in railway_host:
     ALLOWED_HOSTS.append(railway_host.split('//')[1].split(':')[0])  # Extract domain
-if 'RAILWAY' in os.environ:
+if 'RAILWAY' in os.environ or os.getenv('RAILWAY_ENVIRONMENT'):
     ALLOWED_HOSTS.extend(['*.railway.app', '.railway.app', 'railway.app'])
+# Also allow the public Railway domain if set
+railway_public_domain = os.getenv('RAILWAY_PUBLIC_DOMAIN', '')
+if railway_public_domain:
+    ALLOWED_HOSTS.append(railway_public_domain)
 
 
 # Application definition
