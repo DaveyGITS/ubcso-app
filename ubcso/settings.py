@@ -235,6 +235,17 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 CSRF_COOKIE_AGE = SESSION_COOKIE_AGE
 CSRF_USE_SESSIONS = False  # keep CSRF in cookie (default), not session
 
+# Trust Railway domains + any custom domain set via env var
+_csrf_origins = ['https://*.railway.app', 'https://*.up.railway.app', 'http://localhost:8000']
+_custom_domain = os.getenv('RAILWAY_PUBLIC_DOMAIN', '')
+if _custom_domain:
+    _csrf_origins.append(f'https://{_custom_domain}')
+# Also allow any explicitly set trusted origins (comma-separated)
+_extra_origins = os.getenv('CSRF_TRUSTED_ORIGINS', '')
+if _extra_origins:
+    _csrf_origins.extend(_extra_origins.split(','))
+CSRF_TRUSTED_ORIGINS = _csrf_origins
+
 # ─── Celery ───────────────────────────────────────────────────────────────────
 CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
 CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
